@@ -1,13 +1,10 @@
 import { createThemeColors } from '@utils/createThemev2'
 
 export const colors = createThemeColors({
-  indigo: '#6366F1',
-  indigoLighter: '#818CF8',
-  textPrimary: '#1A222E',
-  purple: '#8B5CF6',
-  purpleLighter: '#A78BFA',
-  blue: '#00D4FF',
-  blueLighter: '#67E8F9',
+  bgPrimary: '#0F172A',
+  textPrimary: '#fff',
+  primary: '#F472B6',
+  secondary: '#7DD3FC',
   warning: '#FDE047',
   error: '#E53558',
   successDarker: '#0d9488',

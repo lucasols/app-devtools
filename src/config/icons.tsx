@@ -1,28 +1,8 @@
 export type Icons =
-  | 'add'
-  | 'external'
-  | 'check'
-  | 'list'
-  | 'home'
-  | 'trash'
-  | 'chevron-double-left'
-  | 'warning'
-  | 'close'
-  | 'star'
-  | 'filter'
-  | 'pencil-alt'
-  | 'more'
-  | 'progress'
-  | 'refresh'
+  | 'network'
   | 'search'
-  | 'arrow-left'
-  | 'view-boards'
-  | 'edit'
-  | 'sound'
-  | 'user'
-  | 'work'
-  | 'double-check'
-  | `chevron-${'left' | 'right' | 'up' | 'down'}`
+  | 'settings'
+  | 'send'
 
 const test = import.meta.glob('/src/assets/icons/*.svg', {
   eager: true,

@@ -10,28 +10,6 @@ export default defineConfig((config) => ({
         plugins: [[solidLabels, { dev: config.command === 'serve' }]],
       },
     }),
-    VitePWA({
-      manifest: {
-        background_color: '#ffffff',
-        theme_color: '#ffffff',
-        short_name: 'Solver',
-        name: 'Solver',
-        orientation: 'portrait',
-        icons: [
-          {
-            src: '/pwa-icon.svg',
-            sizes: '512x512',
-            type: 'image/svg+xml',
-            purpose: 'any maskable',
-          },
-          {
-            src: '/pwa-icon-192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-        ],
-      },
-    }),
   ],
   build: {
     target: 'esnext',
@@ -42,5 +20,11 @@ export default defineConfig((config) => ({
       { find: '@src', replacement: '/src' },
       { find: '@utils', replacement: '/utils' },
     ],
+  },
+  test: {
+    include: ['test/*.test.{ts,tsx}'],
+    testTimeout: 5_000,
+    setupFiles: 'test/setup/setup.ts',
+    environment: 'happy-dom',
   },
 }))

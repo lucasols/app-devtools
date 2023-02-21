@@ -2,23 +2,35 @@
   "compileOnSave": false,
   "compilerOptions": {
     "target": "ESNext",
+    "module": "ESNext",
     "moduleResolution": "node",
-    "module": "CommonJS",
     "jsx": "react-jsx",
+    "jsxImportSource": "solid-js",
     "skipLibCheck": true,
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "noEmit": true,
     "esModuleInterop": true,
     "strictNullChecks": true,
     "noImplicitReturns": true,
+    "resolveJsonModule": true,
     "noImplicitAny": true,
     "alwaysStrict": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "forceConsistentCasingInFileNames": true,
-    "keyofStringsOnly": true,
-    "strictPropertyInitialization": true
+    "strictPropertyInitialization": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["src/*"],
+      "@utils/*": ["utils/*"]
+    },
+
+    "plugins": [
+      {
+        "name": "typescript-styled-plugin",
+        "tags": ["styled", "css"]
+      }
+    ]
   }
 }

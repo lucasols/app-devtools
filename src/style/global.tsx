@@ -53,6 +53,7 @@ export const GlobalStyles = () => {
 
     * {
       user-select: none;
+      position: relative;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -96,10 +97,6 @@ export const GlobalStyles = () => {
     h2,
     h3 {
       font-weight: normal;
-    }
-
-    .firebase-emulator-warning {
-      display: none;
     }
 
     ${scrollBarStyle};

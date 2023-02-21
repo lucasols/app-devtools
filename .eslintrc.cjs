@@ -1,10 +1,10 @@
-const isCI = process.env.CI === 'true';
+const isCI = process.env.CI === 'true'
 
-const OFF = 0;
-const WARN = 1;
-const ERROR = 2;
-const ERROR_IN_CI = isCI ? ERROR : WARN;
-const ERROR_IN_CI_ONLY = isCI ? ERROR : 0;
+const OFF = 0
+const WARN = 1
+const ERROR = 2
+const ERROR_IN_CI = isCI ? ERROR : WARN
+const ERROR_IN_CI_ONLY = isCI ? ERROR : 0
 
 module.exports = {
   parser: '@typescript-eslint/parser',
@@ -21,7 +21,7 @@ module.exports = {
   env: {
     browser: true,
   },
-  plugins: ['@typescript-eslint', '@lucasols/extended-lint', 'vitest'],
+  plugins: ['@typescript-eslint', '@lucasols/extended-lint'],
 
   rules: {
     'no-warning-comments': [ERROR_IN_CI, { terms: ['FIX:'] }],
@@ -54,13 +54,11 @@ module.exports = {
     'no-restricted-syntax': [
       ERROR_IN_CI_ONLY,
       {
-        selector:
-          'CallExpression[callee.property.name="only"]',
+        selector: 'CallExpression[callee.property.name="only"]',
         message: 'No test.only',
       },
       {
-        selector:
-          'CallExpression[callee.property.name="todo"]',
+        selector: 'CallExpression[callee.property.name="todo"]',
         message: 'No test.todo',
       },
     ],
@@ -105,15 +103,10 @@ module.exports = {
     '@typescript-eslint/no-misused-promises': OFF,
     '@typescript-eslint/restrict-template-expressions': OFF,
     '@typescript-eslint/unbound-method': OFF,
-
-    /* vitest */
-    'vitest/expect-expect': ERROR_IN_CI_ONLY,
-    'vitest/no-identical-title': ERROR_IN_CI,
   },
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:@typescript-eslint/recommended-requiring-type-checking',
-    'plugin:react-hooks/recommended',
   ],
-};
+}
