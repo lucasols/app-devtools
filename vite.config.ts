@@ -1,7 +1,8 @@
 import solidLabels from 'babel-plugin-solid-labels'
+import { resolve } from 'path'
 import { defineConfig } from 'vite'
-import { VitePWA } from 'vite-plugin-pwa'
 import solidPlugin from 'vite-plugin-solid'
+import packageJson from './package.json'
 
 export default defineConfig((config) => ({
   plugins: [
@@ -14,6 +15,22 @@ export default defineConfig((config) => ({
   build: {
     target: 'esnext',
     assetsInlineLimit: 0,
+    lib: {
+      entry: resolve(__dirname, 'src/main.ts'),
+      name: 'App Devtools',
+      // the proper extensions will be added
+      fileName: 'main',
+    },
+    rollupOptions: {
+      // make sure to externalize deps that shouldn't be bundled
+      // into your library
+      external: [...Object.keys(packageJson.dependencies)],
+      output: {
+        // Provide global variables to use in the UMD build
+        // for externalized deps
+        globals: {},
+      },
+    },
   },
   resolve: {
     alias: [
