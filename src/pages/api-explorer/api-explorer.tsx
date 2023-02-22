@@ -4,8 +4,10 @@ import { Timeline } from '@src/pages/api-explorer/Timeline'
 import { css } from 'solid-styled-components'
 
 const containerStyle = css`
-  display: grid;
-  grid-template-columns: 1.5fr 1fr 3fr;
+  &&& {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 3fr;
+  }
 `
 
 export const ApiExplorerPage = () => {

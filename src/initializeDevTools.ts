@@ -2,7 +2,6 @@ import { initializeApp } from '@src/initializeApp'
 import { Config, setConfig } from '@src/stores/callsStore'
 
 import tinykeys from 'tinykeys'
-import html from '../index.html?raw'
 
 export function initializeDevTools({
   callsProcessor,
@@ -12,7 +11,9 @@ export function initializeDevTools({
   shortcut?: string
 }) {
   tinykeys(window, {
-    [shortcut]: () => {
+    [shortcut]: (e) => {
+      e.preventDefault()
+
       const active = document.activeElement
       const enteringText =
         active instanceof HTMLElement &&
@@ -22,26 +23,11 @@ export function initializeDevTools({
 
       if (enteringText) return
 
-      openDevToolsWindow()
+      initializeApp()
     },
   })
 
   setConfig({
     callsProcessor,
   })
-}
-
-function openDevToolsWindow() {
-  const devToolsWindow = window.open(
-    undefined,
-    'App Devtools',
-    'width=800,height=600',
-  )
-
-  devToolsWindow?.document.write(html)
-
-  if (devToolsWindow) {
-    initializeApp(devToolsWindow.document)
-    devToolsWindow.focus()
-  }
 }

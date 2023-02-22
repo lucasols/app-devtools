@@ -4,14 +4,16 @@ import { parseUnit } from '@utils/parseUnit'
 import { css } from 'solid-styled-components'
 
 export const style = css`
-  position: relative;
-  color: currentColor;
-  height: var(--icon-size, 24px);
-  width: var(--icon-size, 24px);
+  &&& {
+    position: relative;
+    color: currentColor;
+    height: var(--icon-size, 24px);
+    width: var(--icon-size, 24px);
 
-  svg {
-    display: block;
-    ${fillContainer};
+    svg {
+      display: block;
+      ${fillContainer};
+    }
   }
 `
 

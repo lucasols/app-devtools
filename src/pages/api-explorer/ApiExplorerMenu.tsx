@@ -14,76 +14,84 @@ import { Link, useLocation } from 'solid-app-router'
 import { css } from 'solid-styled-components'
 
 const containerStyle = css`
-  ${stack()};
-  border-right: 1px solid ${colors.white.alpha(0.1)};
+  &&& {
+    ${stack()};
+    border-right: 1px solid ${colors.white.alpha(0.1)};
 
-  > h1 {
-    font-size: 18px;
-    padding-left: 12px;
-    padding-top: 10px;
-    font-family: ${fonts.decorative};
-    color: ${colors.secondary.var};
-    padding-bottom: 16px;
+    > h1 {
+      font-size: 18px;
+      padding-left: 12px;
+      padding-top: 10px;
+      font-family: ${fonts.decorative};
+      color: ${colors.secondary.var};
+      padding-bottom: 16px;
+    }
   }
 `
 
 const menuContainerStyle = css`
-  ${stack()};
-  flex: 1 1;
-  overflow-y: auto;
-  padding-bottom: 16px;
+  &&& {
+    ${stack()};
+    flex: 1 1;
+    overflow-y: auto;
+    padding-bottom: 16px;
+  }
 `
 
 const menuItemStyle = css`
-  font-size: 14px;
-  ${stack()};
+  &&& {
+    font-size: 14px;
+    ${stack()};
 
-  > a {
-    padding: 4px 12px;
-    ${inline({ gap: 8 })};
-    opacity: 0.8;
+    > a {
+      padding: 4px 12px;
+      ${inline({ gap: 8 })};
+      opacity: 0.8;
 
-    &.selected {
-      opacity: 1;
-      background-color: ${colors.secondary.alpha(0.16)};
-    }
+      &.selected {
+        opacity: 1;
+        background-color: ${colors.secondary.alpha(0.16)};
+      }
 
-    > .tag {
-      font-weight: 600;
-      font-family: ${fonts.decorative};
-    }
+      > .tag {
+        font-weight: 600;
+        font-family: ${fonts.decorative};
+      }
 
-    > span {
-      ${ellipsis};
-      flex-shrink: 1;
+      > span {
+        ${ellipsis};
+        flex-shrink: 1;
+      }
     }
   }
 `
 
 const searchStyle = css`
-  ${inline({ gap: 8 })};
-  margin: 0 10px;
-  margin-bottom: 8px;
+  &&& {
+    ${inline({ gap: 8 })};
+    margin: 0 10px;
+    margin-bottom: 8px;
 
-  display: grid;
-  grid-template-columns: 14px 1fr;
-  background: ${colors.white.alpha(0.05)};
-  border-radius: 4px;
-  --icon-size: 16px;
-  padding: 4px 0;
-  padding-left: 6px;
+    display: grid;
+    grid-template-columns: 14px 1fr;
+    background: ${colors.white.alpha(0.05)};
+    border-radius: 4px;
+    --icon-size: 16px;
+    padding: 4px 0;
+    padding-left: 6px;
 
-  .icon {
-    color: ${colors.secondary.var};
-  }
+    .icon {
+      color: ${colors.secondary.var};
+    }
 
-  input {
-    border: none;
-    background: transparent;
-    color: ${colors.white.var};
+    input {
+      border: none;
+      background: transparent;
+      color: ${colors.white.var};
 
-    &:focus {
-      outline: none;
+      &:focus {
+        outline: none;
+      }
     }
   }
 `

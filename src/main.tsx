@@ -1,13 +1,11 @@
 import { initializeApp } from '@src/initializeApp'
 import { initializeDevTools } from '@src/initializeDevTools'
 
-const localDevMode = true as boolean
-
-if (localDevMode) {
-  initializeApp()
-}
+export { initializeDevTools }
 
 if (import.meta.env.DEV) {
+  initializeApp()
+
   initializeDevTools({
     callsProcessor: [
       {

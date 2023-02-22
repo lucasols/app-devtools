@@ -1,15 +1,24 @@
 import ButtonElement from '@src/components/ButtonElement'
 import Icon from '@src/components/Icon'
+import { unmountApp } from '@src/initializeApp'
 import { ApiExplorerPage } from '@src/pages/api-explorer/api-explorer'
+import { globalStyle } from '@src/style/globalStyle'
 import { centerContent } from '@src/style/helpers/centerContent'
 import { fillContainer } from '@src/style/helpers/fillContainer'
 import { stack } from '@src/style/helpers/stack'
+import { resetStyle } from '@src/style/reset'
 import { colors } from '@src/style/theme'
 import { css } from 'goober'
+import { createEffect, onCleanup } from 'solid-js'
 
 const containerStyle = css`
+  ${resetStyle};
+  ${globalStyle};
+
+  position: fixed;
+  inset: 32px;
+  border-radius: 4px;
   background: ${colors.bgPrimary.var};
-  ${fillContainer};
   display: grid;
   grid-template-columns: 51px 1fr;
 
@@ -40,8 +49,28 @@ const containerStyle = css`
 `
 
 export const App = () => {
+  createEffect(() => {
+    const onClickOutside = (e: MouseEvent): void => {
+      const target = e.target as HTMLElement
+
+      const rootElement = document.getElementById('dev-tools-root-element')
+
+      if (rootElement && !rootElement.contains(target)) {
+        unmountApp()
+      }
+    }
+    window.addEventListener('click', onClickOutside)
+
+    onCleanup(() => {
+      window.removeEventListener('click', onClickOutside)
+    })
+  })
+
   return (
-    <div class={containerStyle}>
+    <div
+      class={containerStyle}
+      id="dev-tools-root-element"
+    >
       <nav>
         <ButtonElement title="API Explorer">
           <Icon name="network" />

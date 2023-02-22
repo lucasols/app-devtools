@@ -2,10 +2,9 @@ import '@src/utils/initializeScreenLogger'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { render } from 'solid-js/web'
-import { colors, fonts } from '@src/style/theme'
-import '@src/style/reset.css'
-import '@src/style/globalStyle.css'
 import Root from '@src/Root'
+
+let unmount: () => void = () => {}
 
 export function initializeApp() {
   dayjs.extend(relativeTime)
@@ -14,11 +13,16 @@ export function initializeApp() {
     document.body.classList.add('windows')
   }
 
-  document.body.style.setProperty('--primary-font', fonts.primary)
-  document.body.style.setProperty(
-    '--text-primary-color',
-    colors.textPrimary.var,
-  )
+  const devToolsRoot =
+    document.getElementById('dev-tools-root') || document.createElement('div')
 
-  render(() => <Root />, document.getElementById('app')!)
+  devToolsRoot.id = 'dev-tools-root'
+
+  document.body.appendChild(devToolsRoot)
+
+  unmount = render(() => <Root />, devToolsRoot)
+}
+
+export function unmountApp() {
+  unmount()
 }

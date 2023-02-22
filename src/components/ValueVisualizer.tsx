@@ -7,97 +7,99 @@ import { JSXElement } from 'solid-js'
 import { css } from 'solid-styled-components'
 
 const containerStyle = css`
-  font-family: ${fonts.decorative};
-  font-size: 13px;
-  ${allowTextSelection};
-  ${stack({ gap: 2 })};
-  padding-left: 8px;
-
-  .expand-button {
-    margin-left: -16px;
-    width: 16px;
-    display: inline-block;
-    vertical-align: middle;
-    color: ${colors.white.alpha(0.5)};
-
-    &:not(.expanded) .icon {
-      transform: rotate(-90deg);
-    }
-  }
-
-  .show-all {
-    color: ${colors.white.alpha(0.5)};
-    text-align: left;
-  }
-
-  .childs {
+  &&& {
+    font-family: ${fonts.decorative};
+    font-size: 13px;
+    ${allowTextSelection};
     ${stack({ gap: 2 })};
-  }
+    padding-left: 8px;
 
-  .delimiter {
-    color: ${colors.white.alpha(0.5)};
-    margin-top: 1px;
-    margin-bottom: 1px;
+    .expand-button {
+      margin-left: -16px;
+      width: 16px;
+      display: inline-block;
+      vertical-align: middle;
+      color: ${colors.white.alpha(0.5)};
 
-    &.end {
-      &::after {
-        content: ',';
+      &:not(.expanded) .icon {
+        transform: rotate(-90deg);
       }
     }
-  }
 
-  .childs {
-    padding-left: 20px;
-    grid-column: 1 / span 3;
-    border-left: 1px solid ${colors.white.alpha(0.05)};
+    .show-all {
+      color: ${colors.white.alpha(0.5)};
+      text-align: left;
+    }
 
-    > .value {
-      &::after {
-        content: ',';
-        opacity: 0.5;
-        color: ${colors.white.var};
+    .childs {
+      ${stack({ gap: 2 })};
+    }
+
+    .delimiter {
+      color: ${colors.white.alpha(0.5)};
+      margin-top: 1px;
+      margin-bottom: 1px;
+
+      &.end {
+        &::after {
+          content: ',';
+        }
       }
     }
-  }
 
-  .child {
-    display: grid;
-    grid-template-columns: auto auto 1fr;
+    .childs {
+      padding-left: 20px;
+      grid-column: 1 / span 3;
+      border-left: 1px solid ${colors.white.alpha(0.05)};
 
-    .key {
-      color: #A5D6FF;
-      margin-right: 5px;
-
-      &.index {
-        color: ${colors.success.alpha(0.7)};
-      }
-
-      &::after {
-        content: ':';
-        color: ${colors.secondary.alpha(0.5)};
+      > .value {
+        &::after {
+          content: ',';
+          opacity: 0.5;
+          color: ${colors.white.var};
+        }
       }
     }
-  }
 
-  .string-quotes {
-    opacity: 0.7;
-  }
+    .child {
+      display: grid;
+      grid-template-columns: auto auto 1fr;
 
-  [data-type='number'] {
-    color: ${colors.primary.var};
-  }
+      .key {
+        color: #a5d6ff;
+        margin-right: 5px;
 
-  [data-type='boolean'] {
-    color: ${colors.warning.var};
-  }
+        &.index {
+          color: ${colors.success.alpha(0.7)};
+        }
 
-  [data-type='object'],
-  [data-type='undefined'] {
-    color: ${colors.white.alpha(0.6)};
-  }
+        &::after {
+          content: ':';
+          color: ${colors.secondary.alpha(0.5)};
+        }
+      }
+    }
 
-  .collapsed {
-    color: ${colors.white.alpha(0.5)};
+    .string-quotes {
+      opacity: 0.7;
+    }
+
+    [data-type='number'] {
+      color: ${colors.primary.var};
+    }
+
+    [data-type='boolean'] {
+      color: ${colors.warning.var};
+    }
+
+    [data-type='object'],
+    [data-type='undefined'] {
+      color: ${colors.white.alpha(0.6)};
+    }
+
+    .collapsed {
+      color: ${colors.white.alpha(0.5)};
+    }
   }
 `
 
