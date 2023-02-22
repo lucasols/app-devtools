@@ -6,5 +6,5 @@
     "declaration": true
   },
   "files": ["src/main.ts"],
-  "include": ["src/*", "test/**/*"]
+  "include": ["src/types/*.ts"]
 }
