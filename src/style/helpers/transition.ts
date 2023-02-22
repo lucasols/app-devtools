@@ -55,7 +55,7 @@ export function transition(props: Props = {}): string {
     ${
       properties
         ? `
-    transition-property: ${properties?.join(', ') || ''};
+    transition-property: ${properties.join(', ') || ''};
     `
         : ''
     }

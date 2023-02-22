@@ -1,17 +1,10 @@
-import ButtonElement from '@src/components/ButtonElement'
 import Icon from '@src/components/Icon'
 import {
   ApiExplorerMenuItem,
   MenuItem,
 } from '@src/pages/api-explorer/ApiExplorerMenuItem'
-import {
-  ApiCall,
-  callsStore,
-  RequestSubTypes,
-  RequestTypes,
-} from '@src/stores/callsStore'
-import { setUiStore, uiStore } from '@src/stores/uiStore'
-import { ellipsis } from '@src/style/helpers/ellipsis'
+import { callsStore } from '@src/stores/callsStore'
+import { uiStore } from '@src/stores/uiStore'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'

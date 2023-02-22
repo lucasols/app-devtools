@@ -14,9 +14,7 @@ export const fadeIn = ({
   ease?: TransitionEasings
 } = {}) => `
   animation: ${
-    typeof duration === 'number'
-      ? duration
-      : transitionDurations[duration || 'medium']
+    typeof duration === 'number' ? duration : transitionDurations[duration]
   }ms
     ${easings[ease]} fade;
 
