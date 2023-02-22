@@ -7,7 +7,7 @@ export const colors = createThemeColors({
   primary: '#F472B6',
   secondary: '#7DD3FC',
   warning: '#FDE047',
-  error: '#E53558',
+  error: '#f87171',
   successDarker: '#0d9488',
   success: '#4ADE80',
   bg: '#EAEFFF',

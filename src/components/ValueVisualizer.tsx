@@ -1,6 +1,9 @@
 import ButtonElement from '@src/components/ButtonElement'
 import Icon from '@src/components/Icon'
 import { allowTextSelection } from '@src/style/helpers/allowTextSelection'
+import { ellipsis } from '@src/style/helpers/ellipsis'
+import { inline } from '@src/style/helpers/inline'
+import { multilineEllipsis } from '@src/style/helpers/multilineEllipsis'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
 import { JSXElement } from 'solid-js'
@@ -68,6 +71,12 @@ const containerStyle = css`
       .key {
         color: #a5d6ff;
         margin-right: 5px;
+        ${inline({ align: 'top' })};
+
+        span {
+          flex-shrink: 1;
+          ${ellipsis};
+        }
 
         &.index {
           color: ${colors.success.alpha(0.7)};
@@ -82,6 +91,11 @@ const containerStyle = css`
 
     .string-quotes {
       opacity: 0.7;
+    }
+
+    .value {
+      word-wrap: break-word;
+      ${multilineEllipsis(5)};
     }
 
     [data-type='number'] {
@@ -105,7 +119,7 @@ const containerStyle = css`
 
 const numberFormatter = new Intl.NumberFormat('en-US')
 
-const compactMaxChilds = 8
+const compactMaxChilds = 14
 
 type ValueVisualizerProps = {
   value: unknown
@@ -158,7 +172,9 @@ const ValueItem = (props: {
             {hasKey && (
               <div
                 class="key"
-                title="Shift + Click to copy value"
+                title={`${
+                  props.key ? `${props.key}\n` : ''
+                }Shift + Click to copy value`}
                 classList={{
                   index: props.index !== undefined,
                 }}
@@ -169,7 +185,7 @@ const ValueItem = (props: {
                 }}
               >
                 {valueIsArray || valueIsObject ? toggleExpanded : null}
-                {props.key || props.index}
+                <span>{props.key || props.index}</span>
               </div>
             )}
 
@@ -262,7 +278,21 @@ const ValueItem = (props: {
                 if (valueIsObject) {
                   return (
                     <>
-                      <div class="delimiter">
+                      <div
+                        class="delimiter"
+                        title={
+                          !hasKey ? 'Shift + Click to copy value' : undefined
+                        }
+                        onClick={
+                          !hasKey
+                            ? (e) => {
+                                if (e.shiftKey) {
+                                  copyToClipboard(JSON.stringify(value))
+                                }
+                              }
+                            : undefined
+                        }
+                      >
                         {!hasKey && toggleExpanded}
 
                         {expanded

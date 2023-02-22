@@ -1,7 +1,8 @@
 import { initializeApp } from '@src/initializeApp'
 import { initializeDevTools } from '@src/initializeDevTools'
+import { addCall } from '@src/stores/callsStore'
 
-export { initializeDevTools }
+export { initializeDevTools, addCall }
 
 if (import.meta.env.DEV) {
   initializeApp()
@@ -17,7 +18,7 @@ if (import.meta.env.DEV) {
       },
       {
         match: '/v3/tab/:id/views',
-        callName: 'tab views',
+        // callName: 'tab views',
         payloadAlias(_, request) {
           return `tab: ${request.pathParams?.id}`
         },

@@ -1,15 +1,15 @@
 import ButtonElement from '@src/components/ButtonElement'
-import { ApiRequest, callsStore } from '@src/stores/callsStore'
+import { callsStore } from '@src/stores/callsStore'
+import { setUiStore, uiStore } from '@src/stores/uiStore'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
-import { setSearchQuery } from '@src/utils/router'
 import { reverseCopy } from '@utils/arrayUtils'
 import dayjs from 'dayjs'
-import { useLocation } from 'solid-app-router'
 import { createMemo } from 'solid-js'
 import { css } from 'solid-styled-components'
+import { getRequestPayload } from './getRequestPayload'
 
 const containerStyle = css`
   &&& {
@@ -39,6 +39,11 @@ const requestItemStyle = css`
   &&& {
     font-size: 13px;
     ${stack()};
+
+    &.error {
+      color: ${colors.error.var};
+      font-weight: 600;
+    }
 
     > button {
       padding: 4px 12px;
@@ -77,7 +82,7 @@ const emptyStateStyle = css`
 
 export const Timeline = () => {
   const selectedCall = createMemo(() => {
-    const selectedCallId = useLocation().query.callId
+    const selectedCallId = uiStore.selectedCall
 
     if (!selectedCallId) {
       const callsEntries = Object.values(callsStore.calls).at(-1)
@@ -93,11 +98,22 @@ export const Timeline = () => {
   })
 
   const requests = createMemo(() => {
-    return reverseCopy(selectedCall()?.requests) || null
+    const reversed = reverseCopy(selectedCall()?.requests)
+    return reversed.length === 0 ? null : reversed
+  })
+
+  const filteredRequests = createMemo(() => {
+    if (uiStore.selectedSubitem) {
+      return requests()?.filter((request) => {
+        return request.alias === uiStore.selectedSubitem
+      })
+    } else {
+      return requests()
+    }
   })
 
   const selectedRequestId = $(
-    useLocation().query.request || requests()?.[0]?.id,
+    uiStore.selectedRequest || filteredRequests()?.[0]?.id,
   )
 
   return (
@@ -106,7 +122,7 @@ export const Timeline = () => {
 
       <div class={itemsContainerStyle}>
         <For
-          each={requests()}
+          each={filteredRequests()}
           fallback={<div class={emptyStateStyle}>no requests found</div>}
         >
           {(request) => {
@@ -114,13 +130,16 @@ export const Timeline = () => {
             const formattedStartTime = startTime.format('HH:mm:ss')
             const relativeStartTime = startTime.fromNow()
 
-            const payload = getPayload(request)
+            const payload = getRequestPayload(request)
 
             return (
-              <div class={requestItemStyle}>
+              <div
+                class={requestItemStyle}
+                classList={{ error: request.isError }}
+              >
                 <ButtonElement
                   onClick={() => {
-                    setSearchQuery({ request: request.id })
+                    setUiStore('selectedRequest', request.id)
                   }}
                   classList={{
                     selected: request.id === selectedRequestId,
@@ -152,18 +171,4 @@ export const Timeline = () => {
       </div>
     </div>
   )
-}
-
-function getPayload(request: ApiRequest) {
-  const payload = request.alias || request.payload || request.searchParams
-
-  if (!payload || Object.keys(payload).length === 0) {
-    return ''
-  }
-
-  if (typeof payload === 'string' || typeof payload === 'number') {
-    return String(payload)
-  }
-
-  return JSON.stringify(payload)
 }

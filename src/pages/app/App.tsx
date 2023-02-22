@@ -48,38 +48,33 @@ const containerStyle = css`
   }
 `
 
+const backdropStyle = css`
+  ${fillContainer};
+  position: fixed;
+  inset: 0;
+`
+
 export const App = () => {
-  createEffect(() => {
-    const onClickOutside = (e: MouseEvent): void => {
-      const target = e.target as HTMLElement
-
-      const rootElement = document.getElementById('dev-tools-root-element')
-
-      if (rootElement && !rootElement.contains(target)) {
-        unmountApp()
-      }
-    }
-    window.addEventListener('click', onClickOutside)
-
-    onCleanup(() => {
-      window.removeEventListener('click', onClickOutside)
-    })
-  })
-
   return (
-    <div
-      class={containerStyle}
-      id="dev-tools-root-element"
-    >
-      <nav>
-        <ButtonElement title="API Explorer">
-          <Icon name="network" />
-        </ButtonElement>
-      </nav>
+    <>
+      <div
+        class={backdropStyle}
+        onClick={unmountApp}
+      />
+      <div
+        class={containerStyle}
+        id="dev-tools-root-element"
+      >
+        <nav>
+          <ButtonElement title="API Explorer">
+            <Icon name="network" />
+          </ButtonElement>
+        </nav>
 
-      <main>
-        <ApiExplorerPage />
-      </main>
-    </div>
+        <main>
+          <ApiExplorerPage />
+        </main>
+      </div>
+    </>
   )
 }

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "vitest --ui",
     "preview": "vite preview",
     "tsc": "tsc -p tsconfig.prod.json",
     "eslint": "eslint --ext .js,.ts,.tsx,.jsx src",
@@ -19,14 +20,17 @@
     "@babel/core": "^7.20.12",
     "@lucasols/eslint-plugin-extended-lint": "^0.1.1",
     "@popperjs/core": "^2.11.6",
+    "@types/diff": "^5.0.2",
     "@types/marked": "^4.0.8",
     "@types/node": "^18.14.0",
     "@types/rollup-plugin-visualizer": "^4.2.1",
     "@typescript-eslint/eslint-plugin": "^5.52.0",
     "@typescript-eslint/parser": "^5.52.0",
+    "@vitest/ui": "^0.28.5",
     "babel-plugin-solid-labels": "^0.14.2",
     "dayjs": "^1.11.7",
     "dequal": "^2.0.3",
+    "diff": "^5.1.0",
     "eslint": "^8.34.0",
     "goober": "^2.1.12",
     "history": "^5.3.0",
@@ -35,7 +39,6 @@
     "nanoid": "^4.0.1",
     "oslu": "^0.9.0",
     "regexparam": "^2.0.1",
-    "solid-app-router": "^0.4.2",
     "solid-js": "^1.6.11",
     "solid-styled-components": "^0.28.5",
     "tinykeys": "^1.4.0",
@@ -45,9 +48,13 @@
     "vite": "^4.1.2",
     "vite-plugin-pwa": "^0.14.4",
     "vite-plugin-solid": "^2.5.0",
+    "vitest": "^0.28.5",
     "workbox-window": "^6.5.4"
   },
   "volta": {
     "node": "16.14.0"
+  },
+  "devDependencies": {
+    "happy-dom": "^8.7.1"
   }
 }

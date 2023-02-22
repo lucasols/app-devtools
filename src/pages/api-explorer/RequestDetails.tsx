@@ -1,14 +1,14 @@
 import ButtonElement from '@src/components/ButtonElement'
 import { Section } from '@src/components/Section'
 import { ValueVisualizer } from '@src/components/ValueVisualizer'
+import { Diff } from '@src/pages/api-explorer/Diff'
 import { ApiCall, callsStore } from '@src/stores/callsStore'
+import { setUiStore, uiStore } from '@src/stores/uiStore'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
-import { setSearchQuery } from '@src/utils/router'
 import dayjs from 'dayjs'
-import { useLocation } from 'solid-app-router'
 import { createMemo } from 'solid-js'
 import { css } from 'solid-styled-components'
 
@@ -52,6 +52,12 @@ const containerStyle = css`
         padding: 1px 3px;
         border-radius: 4px;
         border: 1px solid ${colors.warning.alpha(0.6)};
+
+        &.error {
+          color: ${colors.error.var};
+          font-weight: 600;
+          border-color: ${colors.error.alpha(0.6)};
+        }
       }
     }
 
@@ -89,9 +95,9 @@ const tabsStyle = css`
 `
 
 export const RequestDetails = () => {
-  const selectedCallId = $(useLocation().query.callId)
-  const selectedRequestId = $(useLocation().query.request)
-  const selectedTab = $(useLocation().query.tab || 'summary')
+  const selectedCallId = $(uiStore.selectedCall)
+  const selectedRequestId = $(uiStore.selectedRequest)
+  const selectedTab = $(uiStore.selectedTab || 'summary')
 
   const selectedRequest = createMemo(() => {
     let selectedCall: ApiCall | undefined
@@ -102,11 +108,12 @@ export const RequestDetails = () => {
       selectedCall = Object.values(callsStore.calls).at(-1)
     }
 
-    const selectedRequest = selectedRequestId
-      ? selectedCall?.requests.find(
+    const selectedRequest =
+      (selectedRequestId &&
+        selectedCall?.requests.find(
           (request) => request.id === selectedRequestId,
-        )
-      : selectedCall?.requests.at(-1)
+        )) ||
+      selectedCall?.requests.at(-1)
 
     if (selectedRequest && selectedCall) {
       return {
@@ -126,7 +133,7 @@ export const RequestDetails = () => {
           selected: selectedTab === tabId,
         }}
         onClick={() => {
-          setSearchQuery({ tab: tabId })
+          setUiStore('selectedTab', tabId)
         }}
       >
         {label}
@@ -165,6 +172,8 @@ export const RequestDetails = () => {
                 </div>
               )}
 
+              {request.isError && <div class="tag error">Has Error</div>}
+
               <For each={request.tags}>
                 {(tag) => <div class="tag">{tag}</div>}
               </For>
@@ -175,6 +184,7 @@ export const RequestDetails = () => {
               {!!request.payload && getTab('payload', 'Payload')}
               {!!request.searchParams && getTab('urlParams', 'URL Params')}
               {getTab('response', 'Response')}
+              {getTab('diff', 'Diff')}
             </div>
 
             <div class="details">
@@ -239,6 +249,10 @@ export const RequestDetails = () => {
                   <Section title={null}>
                     <ValueVisualizer value={request.searchParams} />
                   </Section>
+                </Match>
+
+                <Match when={selectedTab === 'diff'}>
+                  <Diff />
                 </Match>
               </Switch>
             </div>

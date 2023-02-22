@@ -84,7 +84,7 @@ export function setConfig(newConfig: Partial<Config>) {
   }
 }
 
-function addCall(request: {
+export function addCall(request: {
   payload: unknown
   response: unknown
   metadata: unknown
@@ -96,6 +96,7 @@ function addCall(request: {
   method?: string
   startTime?: number
   duration?: number
+  tags?: string[]
 }) {
   const startTime = request.startTime || Date.now()
 
@@ -164,7 +165,11 @@ function addCall(request: {
 
         if (!draft.calls[callID]) {
           draft.calls[callID] = {
-            name: normalizedCallName || pathURL.pathname.replace(/^\//, ''),
+            name:
+              normalizedCallName ||
+              (typeof relatedConfig?.match === 'string' &&
+                relatedConfig.match) ||
+              pathURL.pathname.replace(/^\//, ''),
             path: pathURL.pathname.replace(/^\//, ''),
             lastRequestStartTime: startTime,
             requests: [],
@@ -197,7 +202,7 @@ function addCall(request: {
           method: request.method,
           subType: request.subType,
           code: request.status,
-          tags: [],
+          tags: request.tags || [],
         }
 
         const payloadAlias = tryExpression(() =>
