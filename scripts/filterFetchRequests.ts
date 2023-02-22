@@ -9,7 +9,10 @@ const harFile = readFileSync('./jestorRequests.har', 'utf8')
 const har = JSON.parse(harFile)
 
 const filteredHar = har.log.entries.filter((entry: any) => {
-  return entry.request.url.includes('api.jestor')
+  return (
+    entry.request.url.includes('api.jestor') &&
+    entry.request.method !== 'OPTIONS'
+  )
 })
 
 const normalizedValues = filteredHar.map((entry: any) => {

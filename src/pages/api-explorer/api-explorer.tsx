@@ -1,17 +1,19 @@
 import { ApiExplorerMenu } from '@src/pages/api-explorer/ApiExplorerMenu'
+import { RequestDetails } from '@src/pages/api-explorer/RequestDetails'
+import { Timeline } from '@src/pages/api-explorer/Timeline'
 import { css } from 'solid-styled-components'
 
 const containerStyle = css`
   display: grid;
-  grid-template-columns: auto auto 3fr;
+  grid-template-columns: 1.5fr 1fr 3fr;
 `
 
-type ApiExplorerPageProps = {}
-
-export const ApiExplorerPage = (props: ApiExplorerPageProps) => {
+export const ApiExplorerPage = () => {
   return (
     <div class={containerStyle}>
       <ApiExplorerMenu />
+      <Timeline />
+      <RequestDetails />
     </div>
   )
 }

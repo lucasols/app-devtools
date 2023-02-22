@@ -3,6 +3,7 @@ export type Icons =
   | 'search'
   | 'settings'
   | 'send'
+  | 'caret-down'
 
 const test = import.meta.glob('/src/assets/icons/*.svg', {
   eager: true,

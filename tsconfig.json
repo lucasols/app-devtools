@@ -29,7 +29,7 @@
     "plugins": [
       {
         "name": "typescript-styled-plugin",
-        "tags": ["styled", "css"]
+        "tags": ["css"]
       }
     ]
   }

@@ -2,13 +2,14 @@ import { createThemeColors } from '@utils/createThemev2'
 
 export const colors = createThemeColors({
   bgPrimary: '#0F172A',
+  bgSecondary: '#1E293B',
   textPrimary: '#fff',
   primary: '#F472B6',
   secondary: '#7DD3FC',
   warning: '#FDE047',
   error: '#E53558',
   successDarker: '#0d9488',
-  success: '#6EE7B7',
+  success: '#4ADE80',
   bg: '#EAEFFF',
   white: '#fff',
   black: '#000',

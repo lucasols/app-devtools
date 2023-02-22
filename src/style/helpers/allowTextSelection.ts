@@ -1,9 +1,7 @@
-import { injectCSS } from '@utils/injectCSS';
-
-export const allowTextSelection = injectCSS`
+export const allowTextSelection = `
   user-select: text;
 
-  * {
+  *, *::before, *::after {
     user-select: text;
   }
-`;
+`

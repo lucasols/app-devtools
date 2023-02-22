@@ -6,8 +6,6 @@ import { Router } from 'solid-app-router'
 const Root = () => {
   return (
     <>
-      <GlobalStyles />
-
       <Router source={historyIntegration}>
         <App />
       </Router>

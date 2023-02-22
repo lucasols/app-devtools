@@ -1,14 +1,16 @@
+import Icon from '@src/components/Icon'
 import {
+  ApiCall,
+  callsStore,
   RequestSubTypes,
   RequestTypes,
-  callsStore,
 } from '@src/stores/callsStore'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
-import { Link } from 'solid-app-router'
-import { createMemo } from 'solid-js'
+import { createReconciledArray, createSignalRef } from '@utils/solid'
+import { Link, useLocation } from 'solid-app-router'
 import { css } from 'solid-styled-components'
 
 const containerStyle = css`
@@ -29,6 +31,7 @@ const menuContainerStyle = css`
   ${stack()};
   flex: 1 1;
   overflow-y: auto;
+  padding-bottom: 16px;
 `
 
 const menuItemStyle = css`
@@ -38,6 +41,12 @@ const menuItemStyle = css`
   > a {
     padding: 4px 12px;
     ${inline({ gap: 8 })};
+    opacity: 0.8;
+
+    &.selected {
+      opacity: 1;
+      background-color: ${colors.secondary.alpha(0.16)};
+    }
 
     > .tag {
       font-weight: 600;
@@ -51,30 +60,88 @@ const menuItemStyle = css`
   }
 `
 
-export const ApiExplorerMenu = () => {
-  const menuItems = createMemo(() => {
-    const callsEntries = Object.entries(callsStore.calls).reverse()
+const searchStyle = css`
+  ${inline({ gap: 8 })};
+  margin: 0 10px;
+  margin-bottom: 8px;
 
-    return callsEntries.map(([key, value]) => {
-      return { id: key, ...value }
-    })
-  })
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  background: ${colors.white.alpha(0.05)};
+  border-radius: 4px;
+  --icon-size: 16px;
+  padding: 4px 0;
+  padding-left: 6px;
+
+  .icon {
+    color: ${colors.secondary.var};
+  }
+
+  input {
+    border: none;
+    background: transparent;
+    color: ${colors.white.var};
+
+    &:focus {
+      outline: none;
+    }
+  }
+`
+
+export const ApiExplorerMenu = () => {
+  const search = createSignalRef('')
+
+  const menuItems = createReconciledArray(() => {
+    const callsEntries = Object.entries(callsStore.calls)
+
+    const filtered: (ApiCall & { id: string })[] = []
+
+    for (const [key, value] of callsEntries.reverse()) {
+      if (
+        search.value.trim() &&
+        !value.name.includes(search.value.toLowerCase())
+      ) {
+        continue
+      }
+
+      filtered.push({ id: key, ...value })
+    }
+
+    return filtered
+  }, 'id')
+
+  const currentCallId = $(useLocation().query.callId)
 
   return (
     <div class={containerStyle}>
       <h1>API EXPLORER</h1>
 
-      {/* FIX: search */}
+      <label class={searchStyle}>
+        <Icon name="search" />
+        <input
+          type="text"
+          placeholder="Search"
+          value={search.value}
+          onInput={(e) => {
+            search.value = e.currentTarget.value
+          }}
+        />
+      </label>
 
       <div class={menuContainerStyle}>
         <For each={menuItems()}>
-          {(item) => {
+          {(item, i) => {
             const typeIcon = getTypeIcon(item.type, item.subType)
 
             return (
               <div class={menuItemStyle}>
                 <Link
-                  href={`/api-explorer/?call=${encodeURIComponent(item.id)}`}
+                  href={`/api-explorer/?callId=${item.id}`}
+                  classList={{
+                    selected: currentCallId
+                      ? currentCallId === item.id
+                      : i() === 0,
+                  }}
                 >
                   <div
                     class="tag"

@@ -37,5 +37,5 @@ export function setSearchQuery(query: Record<string, string | undefined>) {
     }
   }
 
-  history.push(`${window.location.pathname}${searchParams.toString()}`)
+  history.push(`${window.location.pathname}?${searchParams.toString()}`)
 }
