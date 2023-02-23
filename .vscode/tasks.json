@@ -12,6 +12,20 @@
       "script": "deploy",
       "problemMatcher": [],
       "label": "deploy"
+    },
+    {
+      "label": "bump version",
+      "type": "shell",
+      "command": "pnpm version ${input:version}",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "version",
+      "type": "pickString",
+      "description": "Select version type",
+      "options": ["minor", "patch", "major"]
     }
   ]
 }

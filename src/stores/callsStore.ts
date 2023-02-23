@@ -85,8 +85,6 @@ export function setConfig(newConfig: Partial<Config>) {
 
 export function addCall(request: {
   payload: unknown
-  response: unknown
-  metadata: unknown
   path: string
   type: RequestTypes
   subType?: RequestSubTypes
@@ -97,7 +95,19 @@ export function addCall(request: {
 }) {
   const startTime = request.startTime || Date.now()
 
-  return ({ isError, status }: { isError: boolean; status?: number }) => {
+  return ({
+    isError,
+    status,
+    response,
+    metadata,
+    tags,
+  }: {
+    isError: boolean
+    status?: number
+    response: unknown
+    metadata?: unknown
+    tags?: string[]
+  }) => {
     const duration = request.duration || Date.now() - startTime
 
     setCallsStore(
@@ -188,17 +198,17 @@ export function addCall(request: {
           duration,
           pathParams,
           isError,
-          metadata: request.metadata,
+          metadata,
           path: request.path.replace(/^\//, ''),
           payload: request.payload,
-          response: request.response,
+          response,
           searchParams,
           startTime,
           type: request.type,
           method: request.method,
           subType: request.subType,
           code: status,
-          tags: request.tags || [],
+          tags: [...(request.tags || []), ...(tags || [])],
         }
 
         const payloadAlias = tryExpression(() =>
@@ -223,8 +233,6 @@ if (import.meta.env.DEV) {
       mockedCalls.default.forEach((call) => {
         addCall({
           payload: call.request.payload,
-          response: call.response.body,
-          metadata: call.metadata,
           path: call.request.path,
           type:
             call.request.method === 'GET'
@@ -257,6 +265,8 @@ if (import.meta.env.DEV) {
         })({
           isError: call.response.status >= 400,
           status: call.response.status,
+          response: call.response.body,
+          metadata: call.metadata,
         })
       })
     })
