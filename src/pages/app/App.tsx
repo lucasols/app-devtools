@@ -51,6 +51,7 @@ const backdropStyle = css`
   ${fillContainer};
   position: fixed;
   inset: 0;
+  backdrop-filter: blur(5px);
 `
 
 export const App = () => {
