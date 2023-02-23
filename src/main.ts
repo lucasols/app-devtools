@@ -8,7 +8,7 @@ if (import.meta.env.DEV) {
   initializeApp()
 
   initializeDevTools({
-    shortcut: '$mod+shift+d',
+    shortcut: 'D',
     callsProcessor: [
       {
         match: '/objectProperties/index',

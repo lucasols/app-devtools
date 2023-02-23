@@ -80,6 +80,16 @@ export const Diff = () => {
     return callsStore.calls[selectedCall]
   })
 
+  const activeRequest = createMemo(() => {
+    if (!uiStore.selectedRequest) return currentCall()?.requests.at(-1) || null
+
+    return currentCall()?.requests.find(
+      (request) => request.id === uiStore.selectedRequest,
+    )
+  })
+
+  const activeRequestId = $(activeRequest()?.id)
+
   const requestOptions = createReconciledArray(() => {
     const call = currentCall()
 
@@ -94,18 +104,10 @@ export const Diff = () => {
           )} | ${truncateText(getRequestPayload(request), 50)}`,
         }
       })
-      .filter((request) => request.value !== uiStore.selectedRequest)
+      .filter((request) => request.value !== activeRequestId)
   }, 'value')
 
   const compareRequest = createSignalRef<null | string>(null)
-
-  const activeRequest = createMemo(() => {
-    if (!uiStore.selectedRequest) return currentCall()?.requests.at(-1) || null
-
-    return currentCall()?.requests.find(
-      (request) => request.id === uiStore.selectedRequest,
-    )
-  })
 
   const compareFromRequest = createMemo(() => {
     if (!compareRequest.value) return null
@@ -116,7 +118,7 @@ export const Diff = () => {
   })
 
   const responseDiff = createMemo(() => {
-    if (!compareRequest.value || !uiStore.selectedRequest) return []
+    if (!compareRequest.value || !activeRequestId) return []
 
     const activeResponse = activeRequest()?.response
 
@@ -128,7 +130,7 @@ export const Diff = () => {
   })
 
   const payloadDiff = createMemo(() => {
-    if (!compareRequest.value || !uiStore.selectedRequest) return []
+    if (!compareRequest.value || !activeRequestId) return []
 
     const activePayload = getPayload(activeRequest())
 
@@ -141,79 +143,76 @@ export const Diff = () => {
 
   return (
     <div class={containerStyle}>
-      <Show when={uiStore.selectedRequest && uiStore.selectedCall}>
-        <Select
-          value={compareRequest.value}
-          label="Select a request to compare with"
-          options={requestOptions()}
-          onChange={(value) => {
-            compareRequest.value = value
-          }}
-        />
+      <Select
+        value={compareRequest.value}
+        label="Select a request to compare with"
+        options={requestOptions()}
+        onChange={(value) => {
+          compareRequest.value = value
+        }}
+      />
 
-        <Show when={compareRequest.value}>
-          <div class="changes-count">
-            <span class="additions">
-              + <b>{responseDiff().filter((item) => item.added).length}</b>{' '}
-              lines
-            </span>{' '}
-            |{' '}
-            <span class="removals">
-              - <b>{responseDiff().filter((item) => item.removed).length}</b>{' '}
-              lines
-            </span>
+      <Show when={compareRequest.value}>
+        <div class="changes-count">
+          <span class="additions">
+            + <b>{responseDiff().filter((item) => item.added).length}</b> lines
+          </span>{' '}
+          |{' '}
+          <span class="removals">
+            - <b>{responseDiff().filter((item) => item.removed).length}</b>{' '}
+            lines
+          </span>
+        </div>
+
+        <Section
+          title={
+            activeRequest()?.payload
+              ? 'Payload Diff'
+              : activeRequest()?.searchParams
+              ? 'Search Params Diff'
+              : 'Path Params Diff'
+          }
+        >
+          <div class={diffContainerStyle}>
+            <For
+              each={payloadDiff()}
+              fallback={<div>No changes</div>}
+            >
+              {(item) => (
+                <div
+                  class="line"
+                  classList={{
+                    added: item.added,
+                    removed: item.removed,
+                  }}
+                >
+                  {item.value}
+                </div>
+              )}
+            </For>
           </div>
+        </Section>
 
-          <Section
-            title={
-              activeRequest()?.payload
-                ? 'Payload Diff'
-                : activeRequest()?.searchParams
-                ? 'Search Params Diff'
-                : 'Path Params Diff'
-            }
-          >
-            <div class={diffContainerStyle}>
-              <For
-                each={payloadDiff()}
-                fallback={<div>No changes</div>}
-              >
-                {(item) => (
-                  <div
-                    class="line"
-                    classList={{
-                      added: item.added,
-                      removed: item.removed,
-                    }}
-                  >
-                    {item.value}
-                  </div>
-                )}
-              </For>
-            </div>
-          </Section>
-
-          <Section title={'Response Diff'}>
-            <div class={diffContainerStyle}>
-              <For
-                each={responseDiff()}
-                fallback={<div>No changes</div>}
-              >
-                {(item) => (
-                  <div
-                    class="line"
-                    classList={{
-                      added: item.added,
-                      removed: item.removed,
-                    }}
-                  >
-                    {item.value}
-                  </div>
-                )}
-              </For>
-            </div>
-          </Section>
-        </Show>
+        <Section title={'Response Diff'}>
+          <div class={diffContainerStyle}>
+            <For
+              each={responseDiff()}
+              fallback={<div>No changes</div>}
+            >
+              {(item) => (
+                <div
+                  class="line"
+                  classList={{
+                    added: item.added,
+                    removed: item.removed,
+                  }}
+                >
+                  {item.value}
+                </div>
+              )}
+            </For>
+          </div>
+        </Section>
       </Show>
     </div>
   )
