@@ -92,7 +92,7 @@ export function addCall(request: {
   method?: string
   startTime?: number
   duration?: number
-  tags?: string[]
+  tags?: (string | null | undefined)[]
 }) {
   const startTime = request.startTime || Date.now()
 
