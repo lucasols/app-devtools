@@ -19,7 +19,7 @@
   "packageManager": "pnpm@6.29.1",
   "license": "MIT",
   "author": "Lucas Santos",
-  "repository": "github:lucasols",
+  "repository": "github:lucasols/app-devtools",
   "type": "module",
   "main": "./dist/main.cjs",
   "module": "./dist/main.js",
