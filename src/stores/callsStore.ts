@@ -4,6 +4,7 @@ import { batch } from 'solid-js'
 import { assertIsNotNullish } from '@utils/assertions'
 import { tryExpression } from '@utils/tryExpression'
 import { matchURLPattern } from '@utils/urlPattern'
+import { concatNonNullable, filterNonNullableElements } from '@utils/arrayUtils'
 
 export type RequestSubTypes = 'delete' | 'update' | 'create' | 'custom'
 
@@ -106,7 +107,7 @@ export function addCall(request: {
     status?: number
     response: unknown
     metadata?: unknown
-    tags?: string[]
+    tags?: (string | null | undefined)[]
   }) => {
     const duration = request.duration || Date.now() - startTime
 
@@ -208,7 +209,9 @@ export function addCall(request: {
           method: request.method,
           subType: request.subType,
           code: status,
-          tags: [...(request.tags || []), ...(tags || [])],
+          tags: filterNonNullableElements(
+            concatNonNullable(request.tags, tags),
+          ),
         }
 
         const payloadAlias = tryExpression(() =>
