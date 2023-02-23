@@ -8,7 +8,7 @@ import { fillContainer } from '@src/style/helpers/fillContainer'
 import { stack } from '@src/style/helpers/stack'
 import { resetStyle } from '@src/style/reset'
 import { colors } from '@src/style/theme'
-import { css } from 'goober'
+import { css } from 'solid-styled-components'
 
 const containerStyle = css`
   ${resetStyle};

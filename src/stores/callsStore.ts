@@ -5,6 +5,7 @@ import { assertIsNotNullish } from '@utils/assertions'
 import { tryExpression } from '@utils/tryExpression'
 import { matchURLPattern } from '@utils/urlPattern'
 import { concatNonNullable, filterNonNullableElements } from '@utils/arrayUtils'
+import { klona } from 'klona'
 
 export type RequestSubTypes = 'delete' | 'update' | 'create' | 'custom'
 
@@ -208,9 +209,9 @@ export function addCall(request: {
           pathParams,
           isError,
           metadata,
-          path: request.path.replace(/^\//, ''),
-          payload: request.payload,
           response,
+          path: request.path.replace(/^\//, ''),
+          payload: klona(request.payload),
           searchParams,
           startTime,
           type: request.type,
