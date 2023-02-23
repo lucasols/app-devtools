@@ -84,6 +84,14 @@ export function setConfig(newConfig: Partial<Config>) {
   }
 }
 
+export type RegisterCallResult = (props: {
+  isError: boolean
+  status?: number | undefined
+  response: unknown
+  metadata?: unknown
+  tags?: (string | null | undefined)[] | undefined
+}) => void
+
 export function addCall(request: {
   payload: unknown
   path: string
@@ -93,7 +101,7 @@ export function addCall(request: {
   startTime?: number
   duration?: number
   tags?: (string | null | undefined)[]
-}) {
+}): RegisterCallResult {
   const startTime = request.startTime || Date.now()
 
   return ({

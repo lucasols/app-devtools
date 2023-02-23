@@ -1,8 +1,8 @@
 import { initializeApp } from '@src/initializeApp'
 import { initializeDevTools } from '@src/initializeDevTools'
-import { addCall } from '@src/stores/callsStore'
+import { addCall, RegisterCallResult } from '@src/stores/callsStore'
 
-export { initializeDevTools, addCall }
+export { initializeDevTools, addCall, RegisterCallResult }
 
 if (import.meta.env.DEV) {
   initializeApp()
