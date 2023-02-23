@@ -7,7 +7,7 @@ export function initializeDevTools({
   callsProcessor,
   shortcut = '$mod+D',
 }: {
-  callsProcessor: Config['callsProcessor']
+  callsProcessor?: Config['callsProcessor']
   shortcut?: string
 }) {
   tinykeys(window, {

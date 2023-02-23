@@ -15,7 +15,6 @@ export type ApiRequest = {
   payload: unknown
   response: unknown
   metadata: unknown
-  status: number
   isError: boolean
   path: string
   searchParams: Record<string, string> | null
@@ -88,8 +87,6 @@ export function addCall(request: {
   payload: unknown
   response: unknown
   metadata: unknown
-  status: number
-  isError: boolean
   path: string
   type: RequestTypes
   subType?: RequestSubTypes
@@ -100,7 +97,7 @@ export function addCall(request: {
 }) {
   const startTime = request.startTime || Date.now()
 
-  return () => {
+  return ({ isError, status }: { isError: boolean; status?: number }) => {
     const duration = request.duration || Date.now() - startTime
 
     setCallsStore(
@@ -190,18 +187,17 @@ export function addCall(request: {
           id: nanoid(),
           duration,
           pathParams,
-          isError: request.isError,
+          isError,
           metadata: request.metadata,
           path: request.path.replace(/^\//, ''),
           payload: request.payload,
           response: request.response,
           searchParams,
-          status: request.status,
           startTime,
           type: request.type,
           method: request.method,
           subType: request.subType,
-          code: request.status,
+          code: status,
           tags: request.tags || [],
         }
 
@@ -229,8 +225,6 @@ if (import.meta.env.DEV) {
           payload: call.request.payload,
           response: call.response.body,
           metadata: call.metadata,
-          status: call.response.status,
-          isError: call.response.status >= 400,
           path: call.request.path,
           type:
             call.request.method === 'GET'
@@ -260,7 +254,10 @@ if (import.meta.env.DEV) {
           method: call.request.method,
           startTime: call.stats.startTime,
           duration: call.stats.time,
-        })()
+        })({
+          isError: call.response.status >= 400,
+          status: call.response.status,
+        })
       })
     })
   }, 1)
