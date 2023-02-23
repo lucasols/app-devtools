@@ -160,7 +160,8 @@ export function addCall(request: {
             type: request.type,
             subType: request.subType,
           }) ||
-          (typeof relatedConfig?.match === 'string' && relatedConfig.match)
+          (typeof relatedConfig?.match === 'string' &&
+            `${request.type}${request.subType || ''}{relatedConfig.match}`)
 
         const callID = btoa(
           normalizedCallId ||
