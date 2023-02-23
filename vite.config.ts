@@ -20,6 +20,7 @@ export default defineConfig((config) => ({
       name: 'App Devtools',
       // the proper extensions will be added
       fileName: 'main',
+      formats: ['es'],
     },
     rollupOptions: {
       // make sure to externalize deps that shouldn't be bundled
@@ -35,6 +36,7 @@ export default defineConfig((config) => ({
         globals: {},
       },
     },
+    minify: false,
   },
   resolve: {
     alias: [
