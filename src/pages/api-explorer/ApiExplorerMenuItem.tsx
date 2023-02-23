@@ -94,7 +94,8 @@ export type MenuItem = ApiCall & {
 }
 
 export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
-  const { item, currentCallId } = $destructure(props)
+  const item = $(props.item)
+  const currentCallId = $(props.currentCallId)
 
   const showSubitems = createSignalRef(props.item.subitemsWithAlias.length < 4)
 
