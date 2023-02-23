@@ -25,11 +25,7 @@ export default defineConfig((config) => ({
     rollupOptions: {
       // make sure to externalize deps that shouldn't be bundled
       // into your library
-      // external: [
-      //   ...Object.keys(packageJson.dependencies).filter(
-      //     (dep) => !['solid-js', 'solid-styled-components'].includes(dep),
-      //   ),
-      // ],
+      external: [...Object.keys(packageJson.dependencies)],
       output: {
         // Provide global variables to use in the UMD build
         // for externalized deps
