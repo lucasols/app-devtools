@@ -8,6 +8,7 @@ if (import.meta.env.DEV) {
   initializeApp()
 
   initializeDevTools({
+    shortcut: '$mod+shift+d',
     callsProcessor: [
       {
         match: '/objectProperties/index',
@@ -18,7 +19,7 @@ if (import.meta.env.DEV) {
       },
       {
         match: '/v3/tab/:id/views',
-        // callName: 'tab views',
+        callName: 'tab view',
         payloadAlias(_, request) {
           return `tab: ${request.pathParams?.id}`
         },

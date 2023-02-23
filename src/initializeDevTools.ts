@@ -5,10 +5,11 @@ import tinykeys from 'tinykeys'
 
 export function initializeDevTools({
   callsProcessor,
-  shortcut = '$mod+D',
+  shortcut,
 }: {
   callsProcessor?: Config['callsProcessor']
-  shortcut?: string
+  /** use $mod for CMD or Ctrl */
+  shortcut: string
 }) {
   tinykeys(window, {
     [shortcut]: (e) => {
