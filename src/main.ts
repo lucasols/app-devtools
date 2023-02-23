@@ -1,6 +1,6 @@
 import { initializeApp } from '@src/initializeApp'
 import { initializeDevTools } from '@src/initializeDevTools'
-import { addCall, RegisterCallResult } from '@src/stores/callsStore'
+import { addCall, type RegisterCallResult } from '@src/stores/callsStore'
 
 export { initializeDevTools, addCall, RegisterCallResult }
 
