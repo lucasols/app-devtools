@@ -100,7 +100,7 @@ export const Diff = () => {
   const compareRequest = createSignalRef<null | string>(null)
 
   const activeRequest = createMemo(() => {
-    if (!uiStore.selectedRequest) return null
+    if (!uiStore.selectedRequest) return currentCall()?.requests.at(-1) || null
 
     return currentCall()?.requests.find(
       (request) => request.id === uiStore.selectedRequest,
@@ -141,76 +141,79 @@ export const Diff = () => {
 
   return (
     <div class={containerStyle}>
-      <Select
-        value={compareRequest.value}
-        label="Select a request to compare with"
-        options={requestOptions()}
-        onChange={(value) => {
-          compareRequest.value = value
-        }}
-      />
+      <Show when={uiStore.selectedRequest && uiStore.selectedCall}>
+        <Select
+          value={compareRequest.value}
+          label="Select a request to compare with"
+          options={requestOptions()}
+          onChange={(value) => {
+            compareRequest.value = value
+          }}
+        />
 
-      <Show when={compareRequest.value}>
-        <div class="changes-count">
-          <span class="additions">
-            + <b>{responseDiff().filter((item) => item.added).length}</b> lines
-          </span>{' '}
-          |{' '}
-          <span class="removals">
-            - <b>{responseDiff().filter((item) => item.removed).length}</b>{' '}
-            lines
-          </span>
-        </div>
-
-        <Section
-          title={
-            activeRequest()?.payload
-              ? 'Payload Diff'
-              : activeRequest()?.searchParams
-              ? 'Search Params Diff'
-              : 'Path Params Diff'
-          }
-        >
-          <div class={diffContainerStyle}>
-            <For
-              each={payloadDiff()}
-              fallback={<div>No changes</div>}
-            >
-              {(item) => (
-                <div
-                  class="line"
-                  classList={{
-                    added: item.added,
-                    removed: item.removed,
-                  }}
-                >
-                  {item.value}
-                </div>
-              )}
-            </For>
+        <Show when={compareRequest.value}>
+          <div class="changes-count">
+            <span class="additions">
+              + <b>{responseDiff().filter((item) => item.added).length}</b>{' '}
+              lines
+            </span>{' '}
+            |{' '}
+            <span class="removals">
+              - <b>{responseDiff().filter((item) => item.removed).length}</b>{' '}
+              lines
+            </span>
           </div>
-        </Section>
 
-        <Section title={'Response Diff'}>
-          <div class={diffContainerStyle}>
-            <For
-              each={responseDiff()}
-              fallback={<div>No changes</div>}
-            >
-              {(item) => (
-                <div
-                  class="line"
-                  classList={{
-                    added: item.added,
-                    removed: item.removed,
-                  }}
-                >
-                  {item.value}
-                </div>
-              )}
-            </For>
-          </div>
-        </Section>
+          <Section
+            title={
+              activeRequest()?.payload
+                ? 'Payload Diff'
+                : activeRequest()?.searchParams
+                ? 'Search Params Diff'
+                : 'Path Params Diff'
+            }
+          >
+            <div class={diffContainerStyle}>
+              <For
+                each={payloadDiff()}
+                fallback={<div>No changes</div>}
+              >
+                {(item) => (
+                  <div
+                    class="line"
+                    classList={{
+                      added: item.added,
+                      removed: item.removed,
+                    }}
+                  >
+                    {item.value}
+                  </div>
+                )}
+              </For>
+            </div>
+          </Section>
+
+          <Section title={'Response Diff'}>
+            <div class={diffContainerStyle}>
+              <For
+                each={responseDiff()}
+                fallback={<div>No changes</div>}
+              >
+                {(item) => (
+                  <div
+                    class="line"
+                    classList={{
+                      added: item.added,
+                      removed: item.removed,
+                    }}
+                  >
+                    {item.value}
+                  </div>
+                )}
+              </For>
+            </div>
+          </Section>
+        </Show>
       </Show>
     </div>
   )
