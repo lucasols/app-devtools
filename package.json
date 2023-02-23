@@ -14,7 +14,7 @@
     "convert-har": "tsm scripts/filterFetchRequests.ts",
     "build": "pnpm test:run && pnpm lint && pnpm build:no-test",
     "build:no-test": "vite build && tsup --dts-only",
-    "publish": "./scripts/check-if-is-sync.sh && pnpm run build && pnpm publish"
+    "deploy": "./scripts/check-if-is-sync.sh && pnpm run build && pnpm publish"
   },
   "packageManager": "pnpm@6.29.1",
   "license": "MIT",
