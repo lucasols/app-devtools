@@ -18,6 +18,12 @@
       "type": "shell",
       "command": "pnpm version ${input:version}",
       "problemMatcher": []
+    },
+    {
+      "label": "bump version and deploy",
+      "type": "shell",
+      "command": "pnpm version ${input:version} && pnpm deploy",
+      "problemMatcher": []
     }
   ],
   "inputs": [
