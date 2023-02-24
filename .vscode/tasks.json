@@ -22,7 +22,7 @@
     {
       "label": "bump version and deploy",
       "type": "shell",
-      "command": "pnpm version ${input:version} && pnpm deploy",
+      "command": "pnpm version ${input:version} && pnpm run deploy",
       "problemMatcher": []
     }
   ],
