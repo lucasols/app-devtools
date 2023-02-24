@@ -10,6 +10,7 @@ import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
 import { searchItems } from '@utils/searchItems'
 import { createReconciledArray, createSignalRef } from '@utils/solid'
+import { sortBy } from '@utils/sortBy'
 import { css } from 'solid-styled-components'
 
 const containerStyle = css`
@@ -99,12 +100,16 @@ export const ApiExplorerMenu = () => {
       })
     }
 
-    return searchItems({
+    const searchedItems = searchItems({
       items: filtered,
       searchQuery: callSearch.trim(),
       getStringToMatch(item) {
         return item.name
       },
+    })
+
+    return sortBy(searchedItems, (item) => {
+      return item.requests.at(-1)?.startTime || 0
     })
   }, 'id')
 
