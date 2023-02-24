@@ -8,6 +8,7 @@ import { uiStore } from '@src/stores/uiStore'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
+import { searchItems } from '@utils/searchItems'
 import { createReconciledArray, createSignalRef } from '@utils/solid'
 import { css } from 'solid-styled-components'
 
@@ -70,18 +71,13 @@ export const ApiExplorerMenu = () => {
   const search = createSignalRef('')
 
   const menuItems = createReconciledArray(() => {
+    const [callSearch = '', requestSearch = ''] = search.value.split('>')
+
     const callsEntries = Object.entries(callsStore.calls)
 
     const filtered: MenuItem[] = []
 
     for (const [key, value] of callsEntries.reverse()) {
-      if (
-        search.value.trim() &&
-        !value.name.includes(search.value.toLowerCase())
-      ) {
-        continue
-      }
-
       const subitemsWithAlias = new Set<string>()
 
       for (const request of value.requests) {
@@ -92,12 +88,24 @@ export const ApiExplorerMenu = () => {
 
       filtered.push({
         id: key,
-        subitemsWithAlias: [...subitemsWithAlias],
+        subitemsWithAlias: searchItems({
+          items: [...subitemsWithAlias],
+          searchQuery: requestSearch.trim(),
+          getStringToMatch(item) {
+            return item
+          },
+        }),
         ...value,
       })
     }
 
-    return filtered
+    return searchItems({
+      items: filtered,
+      searchQuery: callSearch.trim(),
+      getStringToMatch(item) {
+        return item.name
+      },
+    })
   }, 'id')
 
   const currentCallId = $(uiStore.selectedCall)

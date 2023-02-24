@@ -15,6 +15,7 @@ specifiers:
   diff: ^5.1.0
   eslint: ^8.34.0
   happy-dom: ^8.7.1
+  immer: ^9.0.19
   klona: ^2.0.6
   nanoid: ^4.0.1
   oslu: ^0.9.0
@@ -34,6 +35,7 @@ dependencies:
   dayjs: 1.11.7
   dequal: 2.0.3
   diff: 5.1.0
+  immer: 9.0.19
   klona: 2.0.6
   nanoid: 4.0.1
   regexparam: 2.0.1
@@ -2136,6 +2138,10 @@ packages:
     resolution: {integrity: sha512-MAb38BcSbH0eHNBxn7ql2NH/kX33OkB3lZ1BNdh7ENeRChHTYsTvWrMubiIAMNS2llXEEgZ1MUOBtXChP3kaFQ==}
     engines: {node: '>= 4'}
     dev: true
+
+  /immer/9.0.19:
+    resolution: {integrity: sha512-eY+Y0qcsB4TZKwgQzLaE/lqYMlKhv5J9dyd2RhhtGhNo2njPXDqU9XPfcNfa3MIDsdtZt5KlkIsirlo4dHsWdQ==}
+    dev: false
 
   /import-fresh/3.3.0:
     resolution: {integrity: sha512-veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==}

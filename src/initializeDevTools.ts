@@ -13,8 +13,6 @@ export function initializeDevTools({
 }) {
   tinykeys(window, {
     [shortcut]: (e) => {
-      e.preventDefault()
-
       const active = document.activeElement
       const enteringText =
         active instanceof HTMLElement &&
@@ -23,6 +21,8 @@ export function initializeDevTools({
           active.tagName === 'TEXTAREA')
 
       if (enteringText) return
+
+      e.preventDefault()
 
       initializeApp()
     },

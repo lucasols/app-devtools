@@ -1,5 +1,12 @@
 import { dequal } from 'dequal'
-import { createEffect, createMemo, createRoot, createSignal } from 'solid-js'
+import { produce } from 'immer'
+import {
+  createEffect,
+  createMemo,
+  createRoot,
+  createSignal,
+  untrack,
+} from 'solid-js'
 
 export function subscribe(callback: () => any) {
   let disposer: (() => void) | null = null
@@ -59,7 +66,13 @@ export function createElemRef<E extends HTMLElement>() {
   return ref
 }
 
-export function createSignalRef<T>(initialValue: T) {
+export type SignalRef<T> = {
+  value: T
+  produce(recipe: (draft: T) => T | undefined): void
+  peek(): T
+}
+
+export function createSignalRef<T>(initialValue: T): SignalRef<T> {
   const [value, setValue] = createSignal(initialValue)
 
   return {
@@ -69,8 +82,25 @@ export function createSignalRef<T>(initialValue: T) {
     set value(newValue) {
       setValue(() => newValue)
     },
-    set(newValue: T) {
-      setValue(() => newValue)
+    produce(recipe) {
+      setValue((val) => produce(val, recipe))
+    },
+    peek() {
+      return untrack(value)
+    },
+  }
+}
+
+export type MemoRef<T> = {
+  value: T
+}
+
+export function createMemoRef<T>(fn: (prev: T | undefined) => T): MemoRef<T> {
+  const value = createMemo(fn)
+
+  return {
+    get value() {
+      return value()
     },
   }
 }

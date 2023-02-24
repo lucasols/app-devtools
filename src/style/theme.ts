@@ -30,6 +30,6 @@ export const shadows = {
 export type ThemeColors = keyof typeof colors
 
 export const fonts = {
-  primary: 'Work Sans, sans-serif',
+  primary: '"Work Sans", sans-serif',
   decorative: '"Fira Code", monospaced',
 }
