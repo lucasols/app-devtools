@@ -185,11 +185,12 @@ export function addCall(request: {
 
         if (!draft.calls[callID]) {
           draft.calls[callID] = {
-            name:
+            name: (
               callNameNormalizer ||
               (typeof relatedConfig?.match === 'string' &&
                 relatedConfig.match) ||
-              pathURL.pathname.replace(/^\//, ''),
+              pathURL.pathname
+            ).replace(/^\//, ''),
             path: pathURL.pathname.replace(/^\//, ''),
             lastRequestStartTime: startTime,
             requests: [],
