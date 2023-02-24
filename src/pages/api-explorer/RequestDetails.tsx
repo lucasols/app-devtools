@@ -105,7 +105,7 @@ export const RequestDetails = () => {
     if (selectedCallId) {
       selectedCall = callsStore.calls[selectedCallId]
     } else {
-      selectedCall = Object.values(callsStore.calls).at(-1)
+      selectedCall = callsStore.calls[callsStore.lastAddedCallID]
     }
 
     const selectedRequest =

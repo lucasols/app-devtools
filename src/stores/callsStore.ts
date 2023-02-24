@@ -43,10 +43,12 @@ type State = {
   calls: {
     [callID: string]: ApiCall
   }
+  lastAddedCallID: string
 }
 
 export const [callsStore, setCallsStore] = createStore<State>({
   calls: {},
+  lastAddedCallID: '',
 })
 
 export type Config = {
@@ -195,6 +197,8 @@ export function addCall(request: {
             subType: request.subType,
           }
         }
+
+        draft.lastAddedCallID = callID
 
         const call = draft.calls[callID]
 

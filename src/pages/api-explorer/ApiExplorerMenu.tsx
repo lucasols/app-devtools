@@ -100,17 +100,19 @@ export const ApiExplorerMenu = () => {
       })
     }
 
+    const sortedItems = sortBy(filtered, (item) => {
+      return item.requests.at(-1)?.startTime || 0
+    })
+
     const searchedItems = searchItems({
-      items: filtered,
+      items: sortedItems,
       searchQuery: callSearch.trim(),
       getStringToMatch(item) {
         return item.name
       },
     })
 
-    return sortBy(searchedItems, (item) => {
-      return item.requests.at(-1)?.startTime || 0
-    })
+    return searchedItems
   }, 'id')
 
   const currentCallId = $(uiStore.selectedCall)

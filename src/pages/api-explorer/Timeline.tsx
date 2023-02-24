@@ -85,7 +85,7 @@ export const Timeline = () => {
     const selectedCallId = uiStore.selectedCall
 
     if (!selectedCallId) {
-      const callsEntries = Object.values(callsStore.calls).at(-1)
+      const callsEntries = callsStore.calls[callsStore.lastAddedCallID]
 
       return callsEntries || null
     }
