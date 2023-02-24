@@ -1,5 +1,5 @@
 import ButtonElement from '@src/components/ButtonElement'
-import { callsStore } from '@src/stores/callsStore'
+import { callsStore, lastAddedCallID } from '@src/stores/callsStore'
 import { setUiStore, uiStore } from '@src/stores/uiStore'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
@@ -85,7 +85,7 @@ export const Timeline = () => {
     const selectedCallId = uiStore.selectedCall
 
     if (!selectedCallId) {
-      const callsEntries = callsStore.calls[callsStore.lastAddedCallID]
+      const callsEntries = callsStore.calls[lastAddedCallID.value]
 
       return callsEntries || null
     }

@@ -2,7 +2,7 @@ import ButtonElement from '@src/components/ButtonElement'
 import { Section } from '@src/components/Section'
 import { ValueVisualizer } from '@src/components/ValueVisualizer'
 import { Diff } from '@src/pages/api-explorer/Diff'
-import { ApiCall, callsStore } from '@src/stores/callsStore'
+import { ApiCall, callsStore, lastAddedCallID } from '@src/stores/callsStore'
 import { setUiStore, uiStore } from '@src/stores/uiStore'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
@@ -105,7 +105,7 @@ export const RequestDetails = () => {
     if (selectedCallId) {
       selectedCall = callsStore.calls[selectedCallId]
     } else {
-      selectedCall = callsStore.calls[callsStore.lastAddedCallID]
+      selectedCall = callsStore.calls[lastAddedCallID.value]
     }
 
     const selectedRequest =

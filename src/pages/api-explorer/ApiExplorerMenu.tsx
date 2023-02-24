@@ -100,12 +100,8 @@ export const ApiExplorerMenu = () => {
       })
     }
 
-    const sortedItems = sortBy(filtered, (item) => {
-      return item.requests.at(-1)?.startTime || 0
-    })
-
     const searchedItems = searchItems({
-      items: sortedItems,
+      items: filtered,
       searchQuery: callSearch.trim(),
       getStringToMatch(item) {
         return item.name

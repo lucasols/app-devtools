@@ -1,11 +1,12 @@
 import { createStore, produce } from 'solid-js/store'
 import { nanoid } from 'nanoid'
-import { batch } from 'solid-js'
+import { batch, createMemo } from 'solid-js'
 import { assertIsNotNullish } from '@utils/assertions'
 import { tryExpression } from '@utils/tryExpression'
 import { matchURLPattern } from '@utils/urlPattern'
 import { concatNonNullable, filterNonNullableElements } from '@utils/arrayUtils'
 import { klona } from 'klona/json'
+import { createMemoRef, createSignalRef } from '@utils/solid'
 
 export type RequestSubTypes = 'delete' | 'update' | 'create' | 'custom'
 
@@ -43,13 +44,13 @@ type State = {
   calls: {
     [callID: string]: ApiCall
   }
-  lastAddedCallID: string
 }
 
 export const [callsStore, setCallsStore] = createStore<State>({
   calls: {},
-  lastAddedCallID: '',
 })
+
+export const lastAddedCallID = createSignalRef('')
 
 export type Config = {
   callsProcessor: {
@@ -196,9 +197,9 @@ export function addCall(request: {
             type: request.type,
             subType: request.subType,
           }
-        }
 
-        draft.lastAddedCallID = callID
+          lastAddedCallID.value = callID
+        }
 
         const call = draft.calls[callID]
 

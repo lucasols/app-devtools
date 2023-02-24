@@ -1,7 +1,7 @@
 import { Section } from '@src/components/Section'
 import Select from '@src/components/Select'
 import { getRequestPayload } from '@src/pages/api-explorer/getRequestPayload'
-import { ApiRequest, callsStore } from '@src/stores/callsStore'
+import { ApiRequest, callsStore, lastAddedCallID } from '@src/stores/callsStore'
 import { uiStore } from '@src/stores/uiStore'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
@@ -75,7 +75,7 @@ export const Diff = () => {
   const currentCall = createMemo(() => {
     const { selectedCall } = uiStore
 
-    if (!selectedCall) return Object.values(callsStore.calls).at(-1)
+    if (!selectedCall) return callsStore.calls[lastAddedCallID.value]
 
     return callsStore.calls[selectedCall]
   })
