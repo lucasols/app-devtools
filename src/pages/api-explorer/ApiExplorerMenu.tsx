@@ -10,7 +10,6 @@ import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
 import { searchItems } from '@utils/searchItems'
 import { createReconciledArray, createSignalRef } from '@utils/solid'
-import { sortBy } from '@utils/sortBy'
 import { css } from 'solid-styled-components'
 
 const containerStyle = css`
