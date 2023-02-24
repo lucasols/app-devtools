@@ -108,6 +108,8 @@ export function addCall(request: {
 }): RegisterCallResult {
   const startTime = request.startTime || Date.now()
 
+
+
   return ({
     isError,
     status,
@@ -164,7 +166,7 @@ export function addCall(request: {
             subType: request.subType,
           }) ||
           (typeof relatedConfig?.match === 'string' &&
-            `${request.type}${request.subType || ''}{relatedConfig.match}`)
+            `${request.type}${request.subType || ''}${relatedConfig.match}`)
 
         const callID = btoa(
           normalizedCallId ||

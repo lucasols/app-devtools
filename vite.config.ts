@@ -36,7 +36,6 @@ export default defineConfig((config) => ({
         globals: {},
       },
     },
-    minify: false,
   },
   resolve: {
     alias: [

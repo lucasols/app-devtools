@@ -6,6 +6,7 @@ import { inline } from '@src/style/helpers/inline'
 import { multilineEllipsis } from '@src/style/helpers/multilineEllipsis'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
+import { formatNum } from '@src/utils/formatNum'
 import { JSXElement } from 'solid-js'
 import { css } from 'solid-styled-components'
 
@@ -116,8 +117,6 @@ const containerStyle = css`
     }
   }
 `
-
-const numberFormatter = new Intl.NumberFormat('en-US')
 
 const compactMaxChilds = 14
 
@@ -362,7 +361,7 @@ const ValueItem = (props: {
                       <span class="string-quotes">"</span>
                     )}
                     {typeof value === 'number'
-                      ? numberFormatter.format(value)
+                      ? formatNum(value)
                       : String(value)}
                     {typeof value === 'string' && (
                       <span class="string-quotes">"</span>

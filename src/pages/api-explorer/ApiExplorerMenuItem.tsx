@@ -24,9 +24,10 @@ const menuItemStyle = css`
         background-color: ${colors.secondary.alpha(0.16)};
       }
 
-      > button {
+      > .call-button {
         text-align: left;
         ${inline({ gap: 8 })};
+        flex: 1 1;
 
         > .tag {
           font-weight: 600;
@@ -45,11 +46,15 @@ const menuItemStyle = css`
       padding: 4px 12px;
       padding-left: 14px;
       margin-left: 16px;
+      padding-right: 0;
       border-left: 1px solid ${colors.white.alpha(0.1)};
+      ${inline()};
 
       span {
+        ${ellipsis};
         opacity: 0.6;
-        padding: 4px 8px;
+        padding: 0 8px;
+        padding-right: 0;
         margin-left: -8px;
         border-radius: 4px;
       }
@@ -72,7 +77,6 @@ const menuItemStyle = css`
     }
 
     .expand-button {
-      margin-left: auto;
       --icon-size: 16px;
 
       &.expanded {
@@ -115,6 +119,7 @@ export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
           onClick={() => {
             setUiStore({ selectedCall: item.id, selectedSubitem: null })
           }}
+          class="call-button"
         >
           <div
             class="tag"

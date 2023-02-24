@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { initializeApp } from '@src/initializeApp'
 import { initializeDevTools } from '@src/initializeDevTools'
 import { addCall, type RegisterCallResult } from '@src/stores/callsStore'
@@ -29,6 +30,12 @@ if (import.meta.env.DEV) {
         callName: 'tab config',
         payloadAlias(_, request) {
           return `tab: ${request.pathParams?.id}`
+        },
+      },
+      {
+        match: '/object/list',
+        payloadAlias(payload) {
+          return `table: ${payload.object_type}`
         },
       },
       {

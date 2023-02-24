@@ -1,5 +1,6 @@
 import ButtonElement from '@src/components/ButtonElement'
 import { Section } from '@src/components/Section'
+import { TableView } from '@src/components/TableView'
 import { ValueVisualizer } from '@src/components/ValueVisualizer'
 import { Diff } from '@src/pages/api-explorer/Diff'
 import { ApiCall, callsStore, lastAddedCallID } from '@src/stores/callsStore'
@@ -8,6 +9,7 @@ import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
+import { formatNum } from '@src/utils/formatNum'
 import dayjs from 'dayjs'
 import { createMemo } from 'solid-js'
 import { css } from 'solid-styled-components'
@@ -218,13 +220,32 @@ export const RequestDetails = () => {
                   )}
 
                   <Section title="Stats">
-                    <ValueVisualizer
-                      value={{
-                        'Duration (ms)': Math.round(request.duration),
-                        'Start Time': `${dayjs(request.startTime).format(
-                          'HH:mm:ss',
-                        )} (${dayjs(request.startTime).fromNow()})`,
-                      }}
+                    <TableView
+                      rows={[
+                        {
+                          name: 'Duration',
+                          value: (
+                            <span
+                              style={{
+                                color:
+                                  request.duration < 500
+                                    ? colors.success.var
+                                    : request.duration > 1000
+                                    ? colors.error.var
+                                    : undefined,
+                              }}
+                            >
+                              {formatNum(request.duration, 0)} ms
+                            </span>
+                          ),
+                        },
+                        {
+                          name: 'Start Time',
+                          value: `${dayjs(request.startTime).format(
+                            'HH:mm:ss',
+                          )} (${dayjs(request.startTime).fromNow()})`,
+                        },
+                      ]}
                     />
                   </Section>
 
