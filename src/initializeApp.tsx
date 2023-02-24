@@ -13,7 +13,6 @@ export function initializeApp() {
 
   if (isInitialized) {
     unmountApp()
-    isInitialized = false
     return
   }
 
@@ -36,5 +35,6 @@ export function initializeApp() {
 }
 
 export function unmountApp() {
+  isInitialized = false
   unmount()
 }
