@@ -61,13 +61,9 @@ export type Config = {
           subType: RequestSubTypes | undefined
         }) => boolean)
       | string
-    callName?:
-      | ((request: {
-          url: URL
-          type: RequestTypes
-          subType?: RequestSubTypes
-        }) => string)
-      | string
+    matchType?: RequestTypes
+    matchSubType?: RequestSubTypes[]
+    callName?: string
     callID?: (request: {
       url: URL
       type: RequestTypes
@@ -108,8 +104,6 @@ export function addCall(request: {
 }): RegisterCallResult {
   const startTime = request.startTime || Date.now()
 
-
-
   return ({
     isError,
     status,
@@ -142,6 +136,18 @@ export function addCall(request: {
 
         const relatedConfig = config.callsProcessor.find((processor) => {
           if (typeof processor.match === 'string') {
+            if (processor.matchType && processor.matchType !== request.type) {
+              return false
+            }
+
+            if (
+              processor.matchSubType &&
+              request.subType &&
+              processor.matchSubType.includes(request.subType)
+            ) {
+              return false
+            }
+
             const pattern = matchURLPattern(pathURL.pathname, processor.match)
 
             if (pattern) {
@@ -177,19 +183,10 @@ export function addCall(request: {
 
         const callNameNormalizer = relatedConfig?.callName
 
-        const normalizedCallName =
-          typeof callNameNormalizer === 'function'
-            ? callNameNormalizer({
-                url: pathURL,
-                type: request.type,
-                subType: request.subType,
-              })
-            : callNameNormalizer
-
         if (!draft.calls[callID]) {
           draft.calls[callID] = {
             name:
-              normalizedCallName ||
+              callNameNormalizer ||
               (typeof relatedConfig?.match === 'string' &&
                 relatedConfig.match) ||
               pathURL.pathname.replace(/^\//, ''),
