@@ -157,7 +157,7 @@ export const RequestDetails = () => {
   }
 
   const responseSize = createMemoRef(() => {
-    if (!selectedRequest.value) return false
+    if (!selectedRequest.value?.response) return false
 
     const sizeInBytes = JSON.stringify(selectedRequest.value.response).length
 
