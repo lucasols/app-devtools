@@ -1,8 +1,5 @@
 import { colors } from '@src/style/theme'
-import {
-  filterFalseElements,
-  filterNonNullableElements,
-} from '@utils/arrayUtils'
+import { filterFalseElements } from '@utils/arrayUtils'
 import { JSXElement } from 'solid-js'
 import { css } from 'solid-styled-components'
 
