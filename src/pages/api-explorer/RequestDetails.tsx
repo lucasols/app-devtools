@@ -12,7 +12,6 @@ import { colors, fonts } from '@src/style/theme'
 import { formatNum } from '@src/utils/formatNum'
 import { createMemoRef } from '@utils/solid'
 import dayjs from 'dayjs'
-import { createMemo } from 'solid-js'
 import { css } from 'solid-styled-components'
 
 const containerStyle = css`
