@@ -98,7 +98,7 @@ export type RegisterCallResult = (props: {
   tags?: (string | null | undefined)[] | undefined
 }) => void
 
-export function addEvent({
+export function addWebsocketEvent({
   type,
   response,
   payload,
@@ -324,13 +324,13 @@ if (import.meta.env.DEV) {
     })
   }, 1)
 
-  addEvent({
+  addWebsocketEvent({
     type: 'send',
     event: 'connect',
     payload: { ok: true },
   })
 
-  addEvent({
+  addWebsocketEvent({
     type: 'receive',
     event: 'test',
     response: { ok: true },

@@ -1,9 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { initializeApp } from '@src/initializeApp'
 import { initializeDevTools } from '@src/initializeDevTools'
-import { addCall, type RegisterCallResult } from '@src/stores/callsStore'
+import {
+  addCall,
+  type RegisterCallResult,
+  addWebsocketEvent,
+} from '@src/stores/callsStore'
 
-export { initializeDevTools, addCall, RegisterCallResult }
+export {
+  initializeDevTools,
+  addCall,
+  RegisterCallResult,
+  addWebsocketEvent,
+}
 
 if (import.meta.env.DEV) {
   initializeApp()
