@@ -331,6 +331,17 @@ if (import.meta.env.DEV) {
   })
 
   addWebsocketEvent({
+    type: 'send',
+    event: 'connect',
+    payload: { ok: true },
+  })
+
+  addWebsocketEvent({
+    type: 'receive',
+    event: 'test',
+    response: { ok: true },
+  })
+  addWebsocketEvent({
     type: 'receive',
     event: 'test',
     response: { ok: true },

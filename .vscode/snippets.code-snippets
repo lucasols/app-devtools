@@ -60,9 +60,7 @@
     "prefix": "_sshow",
     "body": [
       "<Show when={$1}>",
-      "  {(${2:item}) => (",
-      "    $3",
-      "  )}",
+      "  ${TM_SELECTED_TEXT}",
       "</Show>"
     ]
   },
