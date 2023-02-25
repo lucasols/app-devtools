@@ -389,9 +389,7 @@ export const ValueVisualizer = (props: ValueVisualizerProps) => {
   )
 }
 
-async function copyToClipboard(
-  text: string | Record<string, unknown> | unknown[],
-) {
+async function copyToClipboard(text: unknown) {
   await navigator.clipboard.writeText(
     typeof text === 'object' ? JSON.stringify(text, null, 2) : String(text),
   )
