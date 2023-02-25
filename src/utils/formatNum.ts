@@ -1,16 +1,13 @@
-const formatterCache = new Map<number | undefined, Intl.NumberFormat>()
+const formatterCache = new Map<string, Intl.NumberFormat>()
 
-export function formatNum(number: number, decimal?: number) {
+export function formatNum(number: number, options?: Intl.NumberFormatOptions) {
+  const optionsKey = JSON.stringify(options)
+
   const formatter =
-    formatterCache.get(decimal) ??
+    formatterCache.get(optionsKey) ??
     formatterCache
-      .set(
-        decimal,
-        new Intl.NumberFormat('en-US', {
-          maximumFractionDigits: decimal,
-        }),
-      )
-      .get(decimal)!
+      .set(optionsKey, new Intl.NumberFormat('en-US', options))
+      .get(optionsKey)!
 
   return formatter.format(number)
 }

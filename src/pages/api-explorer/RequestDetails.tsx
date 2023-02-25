@@ -10,6 +10,7 @@ import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
 import { formatNum } from '@src/utils/formatNum'
+import { createMemoRef } from '@utils/solid'
 import dayjs from 'dayjs'
 import { createMemo } from 'solid-js'
 import { css } from 'solid-styled-components'
@@ -113,7 +114,7 @@ export const RequestDetails = () => {
   const selectedRequestId = $(uiStore.selectedRequest)
   const selectedTab = $(uiStore.selectedTab || 'summary')
 
-  const selectedRequest = createMemo(() => {
+  const selectedRequest = createMemoRef(() => {
     let selectedCall: ApiCall | undefined
 
     if (selectedCallId) {
@@ -155,10 +156,23 @@ export const RequestDetails = () => {
     )
   }
 
+  const responseSize = createMemoRef(() => {
+    if (!selectedRequest.value) return false
+
+    const sizeInBytes = JSON.stringify(selectedRequest.value.response).length
+
+    return formatNum(sizeInBytes, {
+      unit: 'byte',
+      style: 'unit',
+      notation: 'compact',
+      unitDisplay: 'narrow',
+    })
+  })
+
   return (
     <div class={containerStyle}>
       <Show
-        when={selectedRequest()}
+        when={selectedRequest.value}
         keyed
       >
         {(request) => (
@@ -252,7 +266,10 @@ export const RequestDetails = () => {
                                     : undefined,
                               }}
                             >
-                              {formatNum(request.duration, 0)} ms
+                              {formatNum(request.duration, {
+                                maximumFractionDigits: 0,
+                              })}{' '}
+                              ms
                             </span>
                           ),
                         },
@@ -269,6 +286,10 @@ export const RequestDetails = () => {
                               )} (${dayjs(request.startTime).fromNow()})`}
                             </span>
                           ),
+                        },
+                        !!responseSize.value && {
+                          name: 'Avg. Response Size',
+                          value: responseSize.value,
                         },
                       ]}
                     />
