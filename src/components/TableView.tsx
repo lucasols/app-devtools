@@ -1,4 +1,8 @@
 import { colors } from '@src/style/theme'
+import {
+  filterFalseElements,
+  filterNonNullableElements,
+} from '@utils/arrayUtils'
 import { JSXElement } from 'solid-js'
 import { css } from 'solid-styled-components'
 
@@ -8,7 +12,6 @@ const containerStyle = css`
     grid-template-columns: auto 1fr;
     font-size: 14px;
     margin-block: -4px;
-
 
     .row {
       display: contents;
@@ -34,16 +37,19 @@ const containerStyle = css`
 `
 
 type TableViewProps = {
-  rows: {
-    name: string
-    value: JSXElement
-  }[]
+  rows: (
+    | {
+        name: string
+        value: JSXElement
+      }
+    | false
+  )[]
 }
 
 export const TableView = (props: TableViewProps) => {
   return (
     <div class={containerStyle}>
-      <Index each={props.rows}>
+      <Index each={filterFalseElements(props.rows)}>
         {(row) => (
           <div class="row">
             <div class="name">{row().name}</div>

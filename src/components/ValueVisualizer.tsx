@@ -179,7 +179,7 @@ const ValueItem = (props: {
                 }}
                 onClick={(e) => {
                   if (e.shiftKey) {
-                    copyToClipboard(JSON.stringify(value))
+                    copyToClipboard(value)
                   }
                 }}
               >
@@ -216,7 +216,7 @@ const ValueItem = (props: {
                           !hasKey
                             ? (e) => {
                                 if (e.shiftKey) {
-                                  copyToClipboard(JSON.stringify(value))
+                                  copyToClipboard(value)
                                 }
                               }
                             : undefined
@@ -286,7 +286,7 @@ const ValueItem = (props: {
                           !hasKey
                             ? (e) => {
                                 if (e.shiftKey) {
-                                  copyToClipboard(JSON.stringify(value))
+                                  copyToClipboard(value)
                                 }
                               }
                             : undefined
@@ -389,8 +389,12 @@ export const ValueVisualizer = (props: ValueVisualizerProps) => {
   )
 }
 
-async function copyToClipboard(text: string) {
-  await navigator.clipboard.writeText(text)
+async function copyToClipboard(
+  text: string | Record<string, unknown> | unknown[],
+) {
+  await navigator.clipboard.writeText(
+    typeof text === 'object' ? JSON.stringify(text, null, 2) : String(text),
+  )
 
   alert('Copied to clipboard')
 }

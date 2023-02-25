@@ -34,7 +34,7 @@ const appendMs = (value?: string | number) =>
 
 export function transitionShorthand({
   property,
-  duration = 'medium',
+  duration = 'short',
   ease = 'inOut',
   delay,
 }: ArrayProp = {}) {

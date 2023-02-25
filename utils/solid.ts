@@ -70,6 +70,7 @@ export type SignalRef<T> = {
   value: T
   produce(recipe: (draft: T) => T | undefined): void
   peek(): T
+  set: (newValue: T) => void
 }
 
 export function createSignalRef<T>(initialValue: T): SignalRef<T> {
@@ -80,6 +81,9 @@ export function createSignalRef<T>(initialValue: T): SignalRef<T> {
       return value()
     },
     set value(newValue) {
+      setValue(() => newValue)
+    },
+    set(newValue) {
       setValue(() => newValue)
     },
     produce(recipe) {

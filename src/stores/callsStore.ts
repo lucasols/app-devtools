@@ -8,9 +8,15 @@ import { nanoid } from 'nanoid'
 import { batch } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 
-export type RequestSubTypes = 'delete' | 'update' | 'create' | 'custom'
+export type RequestSubTypes =
+  | 'delete'
+  | 'update'
+  | 'create'
+  | 'custom'
+  | 'send'
+  | 'receive'
 
-export type RequestTypes = 'fetch' | 'mutation'
+export type RequestTypes = 'ws' | 'fetch' | 'mutation'
 
 export type ApiRequest = {
   id: string
@@ -91,6 +97,34 @@ export type RegisterCallResult = (props: {
   metadata?: unknown
   tags?: (string | null | undefined)[] | undefined
 }) => void
+
+export function addEvent({
+  type,
+  response,
+  payload,
+  event,
+  startTime,
+}: {
+  type: 'send' | 'receive'
+  event: string
+  response?: unknown
+  payload?: unknown
+  startTime?: number
+}) {
+  const result = addCall({
+    type: 'ws',
+    path: event,
+    payload,
+    startTime,
+    duration: 0,
+    subType: type,
+  })
+
+  result({
+    isError: false,
+    response,
+  })
+}
 
 export function addCall(request: {
   payload: unknown
@@ -289,4 +323,16 @@ if (import.meta.env.DEV) {
       })
     })
   }, 1)
+
+  addEvent({
+    type: 'send',
+    event: 'connect',
+    payload: { ok: true },
+  })
+
+  addEvent({
+    type: 'receive',
+    event: 'test',
+    response: { ok: true },
+  })
 }

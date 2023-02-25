@@ -110,9 +110,7 @@ export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
       <div
         class="call"
         classList={{
-          selected: currentCallId
-            ? currentCallId === item.id
-            : props.index === 0,
+          selected: currentCallId === item.id,
         }}
       >
         <ButtonElement
@@ -180,31 +178,35 @@ function getTypeIcon(
   icon: string
   color: string
 } {
-  let icon = ''
-  let color = ''
+  if (type === 'ws') {
+    return {
+      icon: subType === 'send' ? 'S' : 'R',
+      color: '#6EE7B7',
+    }
+  }
 
   if (type === 'fetch') {
-    icon = 'F'
-    color = '#FDE047'
-  } else {
-    if (subType) {
-      if (subType === 'create') {
-        icon = 'C'
-        color = '#6EE7B7'
-      } else if (subType === 'update') {
-        icon = 'U'
-        color = '#A78BFA'
-      } else if (subType === 'delete') {
-        icon = 'D'
-        color = '#E53558'
-      } else {
-        icon = subType[0]?.toUpperCase() || '?'
-        color = '#FDE047'
-      }
-    } else {
-      icon = 'M'
-      color = '#A78BFA'
+    return {
+      icon: 'F',
+      color: '#FDE047',
     }
+  }
+
+  let icon = ''
+  const color = '#A78BFA'
+
+  if (subType) {
+    if (subType === 'create') {
+      icon = 'C'
+    } else if (subType === 'update') {
+      icon = 'U'
+    } else if (subType === 'delete') {
+      icon = 'D'
+    } else {
+      icon = subType[0]?.toUpperCase() || '?'
+    }
+  } else {
+    icon = 'M'
   }
 
   return {

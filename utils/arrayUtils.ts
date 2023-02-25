@@ -42,6 +42,12 @@ export function concatNonNullable<T>(
   return result
 }
 
-export function filterNonNullableElements<T>(array: (T | null | undefined)[]): T[] {
+export function filterNonNullableElements<T>(
+  array: (T | null | undefined)[],
+): T[] {
   return array.filter((item) => item !== null && item !== undefined) as T[]
+}
+
+export function filterFalseElements<T>(array: (T | false)[]): T[] {
+  return array.filter((item) => item !== false) as T[]
 }

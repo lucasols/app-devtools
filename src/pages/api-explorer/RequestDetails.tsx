@@ -23,6 +23,17 @@ const containerStyle = css`
       margin-top: 12px;
       font-family: ${fonts.decorative};
       ${ellipsis};
+
+      span.separator {
+        font-size: 14px;
+        font-weight: 300;
+        opacity: 0.4;
+        margin: 0 4px;
+      }
+
+      span.type {
+        color: ${colors.secondary.var};
+      }
     }
 
     > h2 {
@@ -152,8 +163,11 @@ export const RequestDetails = () => {
         {(request) => (
           <>
             <h1>
+              <span class="type">{request.type === 'ws' ? 'WS' : 'API'}</span>
+              <span class="separator">{'|'}</span>
               {request.callName}
-              {request.alias && ` | ${request.alias}`}
+              {request.alias && <span>{'|'}</span>}
+              {request.alias}
             </h1>
 
             {request.callPath !== request.callName && (
@@ -222,7 +236,7 @@ export const RequestDetails = () => {
                   <Section title="Stats">
                     <TableView
                       rows={[
-                        {
+                        request.type !== 'ws' && {
                           name: 'Duration',
                           value: (
                             <span
@@ -249,9 +263,11 @@ export const RequestDetails = () => {
                     />
                   </Section>
 
-                  <Section title="Metadata">
-                    <ValueVisualizer value={request.metadata} />
-                  </Section>
+                  <Show when={request.type !== 'ws'}>
+                    <Section title="Metadata">
+                      <ValueVisualizer value={request.metadata} />
+                    </Section>
+                  </Show>
                 </Match>
 
                 <Match when={selectedTab === 'payload'}>
