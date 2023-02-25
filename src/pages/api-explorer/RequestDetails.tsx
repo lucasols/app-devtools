@@ -32,6 +32,7 @@ const containerStyle = css`
       }
 
       span.type {
+        text-transform: capitalize;
         color: ${colors.secondary.var};
       }
     }
@@ -163,7 +164,9 @@ export const RequestDetails = () => {
         {(request) => (
           <>
             <h1>
-              <span class="type">{request.type === 'ws' ? 'WS' : 'API'}</span>
+              <span class="type">
+                {request.type === 'ws' ? `WS ${request.subType}` : 'API'}
+              </span>
               <span class="separator">{'|'}</span>
               {request.callName}
               {request.alias && <span>{'|'}</span>}
