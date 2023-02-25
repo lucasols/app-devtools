@@ -91,10 +91,10 @@ const tabsStyle = css`
   }
 `
 
+const selectedTab = createSignalRef<'api' | 'ws' | 'all'>('api')
+
 export const ApiExplorerMenu = () => {
   const search = createSignalRef('')
-
-  const selectedTab = createSignalRef<'api' | 'ws' | 'all'>('api')
 
   const menuItems = createReconciledArray(() => {
     const [callSearch = '', requestSearch = ''] = search.value.split('>')
