@@ -255,9 +255,17 @@ export const RequestDetails = () => {
                         },
                         {
                           name: 'Start Time',
-                          value: `${dayjs(request.startTime).format(
-                            'HH:mm:ss',
-                          )} (${dayjs(request.startTime).fromNow()})`,
+                          value: (
+                            <span
+                              title={dayjs(request.startTime).format(
+                                'YYYY-MM-DD HH:mm:ss.SSS',
+                              )}
+                            >
+                              {`${dayjs(request.startTime).format(
+                                'HH:mm:ss',
+                              )} (${dayjs(request.startTime).fromNow()})`}
+                            </span>
+                          ),
                         },
                       ]}
                     />
