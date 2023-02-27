@@ -180,7 +180,7 @@ export const RequestDetails = () => {
               <span class="type">
                 {request.type === 'ws' ? `WS ${request.subType}` : 'API'}
               </span>
-              <span>{'|'}</span>
+              <span class="separator">{'|'}</span>
               {request.callName}
               {request.alias && <span class="separator">{'|'}</span>}
               {request.alias}

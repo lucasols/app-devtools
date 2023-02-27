@@ -415,6 +415,10 @@ function getObjId(obj: Record<string, unknown>): JSXElement | null {
     }
   }
 
+  if ('key' in obj) {
+    return <span> · id: {String(obj.id)}</span>
+  }
+
   return ''
 }
 
