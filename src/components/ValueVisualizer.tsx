@@ -7,6 +7,7 @@ import { multilineEllipsis } from '@src/style/helpers/multilineEllipsis'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
 import { formatNum } from '@src/utils/formatNum'
+import { isObject } from '@utils/objectUtils'
 import { JSXElement } from 'solid-js'
 import { css } from 'solid-styled-components'
 
@@ -114,6 +115,10 @@ const containerStyle = css`
 
     .collapsed {
       color: ${colors.white.alpha(0.5)};
+
+      > span {
+        color: ${colors.white.alpha(0.4)};
+      }
     }
   }
 `
@@ -140,8 +145,7 @@ const ValueItem = (props: {
       {(() => {
         const value = props.value
         const valueIsArray = Array.isArray(value)
-        const valueIsObject =
-          !valueIsArray && typeof value === 'object' && value !== null
+        const valueIsObject = !valueIsArray && isObject(value)
 
         const hasKey = props.key !== undefined || props.index !== undefined
 
@@ -190,9 +194,14 @@ const ValueItem = (props: {
 
             {hasKey && showExpandButton && !expanded ? (
               <div class="collapsed">
-                {valueIsArray
-                  ? `[…] ${value.length} items`
-                  : `{…} ${Object.keys(value).length} properties`}
+                {valueIsArray ? (
+                  `[…] ${value.length} items`
+                ) : (
+                  <>
+                    {`{…} ${Object.keys(value).length} props`}
+                    {getObjId(value)}
+                  </>
+                )}
               </div>
             ) : (
               ((): JSXElement => {
@@ -387,6 +396,26 @@ export const ValueVisualizer = (props: ValueVisualizerProps) => {
       />
     </div>
   )
+}
+
+function getObjId(obj: Record<string, unknown>): JSXElement | null {
+  if ('id' in obj) {
+    return <span> · id: {String(obj.id)}</span>
+  }
+
+  const keys = Object.keys(obj)
+
+  for (const key of keys) {
+    if (key.startsWith('id_')) {
+      const id = obj[key]
+
+      if (typeof id === 'string' || typeof id === 'number') {
+        return <span> · id: {id}</span>
+      }
+    }
+  }
+
+  return ''
 }
 
 async function copyToClipboard(text: unknown) {
