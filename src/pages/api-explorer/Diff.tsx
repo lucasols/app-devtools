@@ -145,6 +145,8 @@ export const Diff = () => {
     return diffParts === 'no changes' ? [] : diffParts
   })
 
+  $(watchValue(compareRequest.value))
+
   return (
     <div class={containerStyle}>
       <Select

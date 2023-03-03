@@ -170,163 +170,166 @@ export const RequestDetails = () => {
 
   return (
     <div class={containerStyle}>
-      <Show
-        when={selectedRequest.value}
-        keyed
-      >
-        {(request) => (
-          <>
-            <h1>
-              <span class="type">
-                {request.type === 'ws' ? `WS ${request.subType}` : 'API'}
-              </span>
-              <span class="separator">{'|'}</span>
-              {request.callName}
-              {request.alias && <span class="separator">{'|'}</span>}
-              {request.alias}
-            </h1>
+      {selectedRequest.value && (
+        <>
+          <h1>
+            <span class="type">
+              {selectedRequest.value.type === 'ws' ? `WS ${selectedRequest.value.subType}` : 'API'}
+            </span>
+            <span class="separator">{'|'}</span>
+            {selectedRequest.value.callName}
+            {selectedRequest.value.alias && <span class="separator">{'|'}</span>}
+            {selectedRequest.value.alias}
+          </h1>
 
-            {request.callPath !== request.callName && (
-              <h2>{request.callPath}</h2>
+          {selectedRequest.value.callPath !==
+            selectedRequest.value.callName && (
+            <h2>{selectedRequest.value.callPath}</h2>
+          )}
+
+          <div class="tags">
+            {selectedRequest.value.method && (
+              <div class="method">{selectedRequest.value.method}</div>
             )}
 
-            <div class="tags">
-              {request.method && <div class="method">{request.method}</div>}
+            {selectedRequest.value.code && (
+              <div
+                class="code"
+                classList={{
+                  error: selectedRequest.value.code >= 400,
+                }}
+              >
+                {selectedRequest.value.code}
+              </div>
+            )}
 
-              {request.code && (
-                <div
-                  class="code"
-                  classList={{
-                    error: request.code >= 400,
-                  }}
-                >
-                  {request.code}
-                </div>
-              )}
+            {selectedRequest.value.isError && (
+              <div class="tag error">Has Error</div>
+            )}
 
-              {request.isError && <div class="tag error">Has Error</div>}
+            <For each={selectedRequest.value.tags}>
+              {(tag) => <div class="tag">{tag}</div>}
+            </For>
+          </div>
 
-              <For each={request.tags}>
-                {(tag) => <div class="tag">{tag}</div>}
-              </For>
-            </div>
+          <div class={tabsStyle}>
+            {getTab('summary', 'Summary')}
+            {!!selectedRequest.value.payload && getTab('payload', 'Payload')}
+            {!!selectedRequest.value.searchParams &&
+              getTab('urlParams', 'URL Params')}
+            {getTab('response', 'Response')}
+            {getTab('diff', 'Diff')}
+          </div>
 
-            <div class={tabsStyle}>
-              {getTab('summary', 'Summary')}
-              {!!request.payload && getTab('payload', 'Payload')}
-              {!!request.searchParams && getTab('urlParams', 'URL Params')}
-              {getTab('response', 'Response')}
-              {getTab('diff', 'Diff')}
-            </div>
-
-            <div class="details">
-              <Switch>
-                <Match when={selectedTab === 'summary'}>
-                  {!!request.payload && (
-                    <Section title="Payload">
-                      <ValueVisualizer
-                        value={request.payload}
-                        compact
-                      />
-                    </Section>
-                  )}
-
-                  {!!request.searchParams && (
-                    <Section title="URL Params">
-                      <ValueVisualizer
-                        value={request.searchParams}
-                        compact
-                      />
-                    </Section>
-                  )}
-
-                  {!!request.response && (
-                    <Section title="Response">
-                      <ValueVisualizer
-                        value={request.response}
-                        compact
-                      />
-                    </Section>
-                  )}
-
-                  <Section title="Stats">
-                    <TableView
-                      rows={[
-                        request.type !== 'ws' && {
-                          name: 'Duration',
-                          value: (
-                            <span
-                              style={{
-                                color:
-                                  request.duration < 500
-                                    ? colors.success.var
-                                    : request.duration > 1000
-                                    ? colors.error.var
-                                    : undefined,
-                              }}
-                            >
-                              {formatNum(request.duration, {
-                                maximumFractionDigits: 0,
-                              })}{' '}
-                              ms
-                            </span>
-                          ),
-                        },
-                        {
-                          name: 'Start Time',
-                          value: (
-                            <span
-                              title={dayjs(request.startTime).format(
-                                'YYYY-MM-DD HH:mm:ss.SSS',
-                              )}
-                            >
-                              {`${dayjs(request.startTime).format(
-                                'HH:mm:ss',
-                              )} (${dayjs(request.startTime).fromNow()})`}
-                            </span>
-                          ),
-                        },
-                        !!responseSize.value && {
-                          name: 'Avg. Response Size',
-                          value: responseSize.value,
-                        },
-                      ]}
+          <div class="details">
+            <Switch>
+              <Match when={selectedTab === 'summary'}>
+                {!!selectedRequest.value.payload && (
+                  <Section title="Payload">
+                    <ValueVisualizer
+                      value={selectedRequest.value.payload}
+                      compact
                     />
                   </Section>
+                )}
 
-                  <Show when={request.type !== 'ws'}>
-                    <Section title="Metadata">
-                      <ValueVisualizer value={request.metadata} />
-                    </Section>
-                  </Show>
-                </Match>
-
-                <Match when={selectedTab === 'payload'}>
-                  <Section title={null}>
-                    <ValueVisualizer value={request.payload} />
+                {!!selectedRequest.value.searchParams && (
+                  <Section title="URL Params">
+                    <ValueVisualizer
+                      value={selectedRequest.value.searchParams}
+                      compact
+                    />
                   </Section>
-                </Match>
+                )}
 
-                <Match when={selectedTab === 'response'}>
-                  <Section title={null}>
-                    <ValueVisualizer value={request.response} />
+                {!!selectedRequest.value.response && (
+                  <Section title="Response">
+                    <ValueVisualizer
+                      value={selectedRequest.value.response}
+                      compact
+                    />
                   </Section>
-                </Match>
+                )}
 
-                <Match when={selectedTab === 'urlParams'}>
-                  <Section title={null}>
-                    <ValueVisualizer value={request.searchParams} />
+                <Section title="Stats">
+                  <TableView
+                    rows={[
+                      selectedRequest.value.type !== 'ws' && {
+                        name: 'Duration',
+                        value: (
+                          <span
+                            style={{
+                              color:
+                                selectedRequest.value.duration < 500
+                                  ? colors.success.var
+                                  : selectedRequest.value.duration > 1000
+                                  ? colors.error.var
+                                  : undefined,
+                            }}
+                          >
+                            {formatNum(selectedRequest.value.duration, {
+                              maximumFractionDigits: 0,
+                            })}{' '}
+                            ms
+                          </span>
+                        ),
+                      },
+                      {
+                        name: 'Start Time',
+                        value: (
+                          <span
+                            title={dayjs(
+                              selectedRequest.value.startTime,
+                            ).format('YYYY-MM-DD HH:mm:ss.SSS')}
+                          >
+                            {`${dayjs(selectedRequest.value.startTime).format(
+                              'HH:mm:ss',
+                            )} (${dayjs(
+                              selectedRequest.value.startTime,
+                            ).fromNow()})`}
+                          </span>
+                        ),
+                      },
+                      !!responseSize.value && {
+                        name: 'Avg. Response Size',
+                        value: responseSize.value,
+                      },
+                    ]}
+                  />
+                </Section>
+
+                <Show when={selectedRequest.value.type !== 'ws'}>
+                  <Section title="Metadata">
+                    <ValueVisualizer value={selectedRequest.value.metadata} />
                   </Section>
-                </Match>
+                </Show>
+              </Match>
 
-                <Match when={selectedTab === 'diff'}>
-                  <Diff />
-                </Match>
-              </Switch>
-            </div>
-          </>
-        )}
-      </Show>
+              <Match when={selectedTab === 'payload'}>
+                <Section title={null}>
+                  <ValueVisualizer value={selectedRequest.value.payload} />
+                </Section>
+              </Match>
+
+              <Match when={selectedTab === 'response'}>
+                <Section title={null}>
+                  <ValueVisualizer value={selectedRequest.value.response} />
+                </Section>
+              </Match>
+
+              <Match when={selectedTab === 'urlParams'}>
+                <Section title={null}>
+                  <ValueVisualizer value={selectedRequest.value.searchParams} />
+                </Section>
+              </Match>
+
+              <Match when={selectedTab === 'diff'}>
+                <Diff />
+              </Match>
+            </Switch>
+          </div>
+        </>
+      )}
     </div>
   )
 }

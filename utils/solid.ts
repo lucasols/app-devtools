@@ -5,6 +5,7 @@ import {
   createMemo,
   createRoot,
   createSignal,
+  JSXElement,
   untrack,
 } from 'solid-js'
 
@@ -107,4 +108,8 @@ export function createMemoRef<T>(fn: (prev: T | undefined) => T): MemoRef<T> {
       return value()
     },
   }
+}
+
+export function iife(expression: () => JSXElement): JSXElement {
+  return expression()
 }

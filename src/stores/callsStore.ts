@@ -346,4 +346,12 @@ if (import.meta.env.DEV) {
     event: 'test',
     response: { ok: true },
   })
+
+  setInterval(() => {
+    addWebsocketEvent({
+      type: 'receive',
+      event: 'test',
+      response: { ok: true },
+    })
+  }, 5000)
 }
