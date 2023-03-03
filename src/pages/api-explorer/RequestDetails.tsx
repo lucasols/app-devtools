@@ -216,7 +216,7 @@ export const RequestDetails = () => {
             {getTab('summary', 'Summary')}
             {!!selectedRequest.value.payload && getTab('payload', 'Payload')}
             {!!selectedRequest.value.searchParams &&
-              getTab('urlParams', 'URL Params')}
+              getTab('urlParams', 'URL Search Params')}
             {getTab('response', 'Response')}
             {getTab('diff', 'Diff')}
           </div>
@@ -234,7 +234,7 @@ export const RequestDetails = () => {
                 )}
 
                 {!!selectedRequest.value.searchParams && (
-                  <Section title="URL Params">
+                  <Section title="URL Search Params">
                     <ValueVisualizer
                       value={selectedRequest.value.searchParams}
                       compact
