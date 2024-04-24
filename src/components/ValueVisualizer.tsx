@@ -123,7 +123,7 @@ const containerStyle = css`
   }
 `
 
-const compactMaxChilds = 14
+const compactMaxChildren = 14
 
 type ValueVisualizerProps = {
   value: unknown
@@ -136,9 +136,18 @@ const ValueItem = (props: {
   key?: string
   index?: number
   compact: boolean
+  parentIsExpanded: boolean
 }) => {
-  let expanded = $signal(props.indent > 0 && props.compact ? false : true)
+  let isInitiallyExpanded = props.parentIsExpanded
+
+  if (props.compact && props.indent >= 3 && isInitiallyExpanded) {
+    isInitiallyExpanded = false
+  }
+
+  let expanded = $signal(isInitiallyExpanded)
   let showAllChilds = $signal(!props.compact)
+
+  let maxCompactChildrenToUse = props.indent >= 2 ? 5 : compactMaxChildren
 
   return (
     <>
@@ -244,7 +253,7 @@ const ValueItem = (props: {
                               const totalSize = items.length
 
                               if (!showAllChilds) {
-                                items = items.slice(0, compactMaxChilds)
+                                items = items.slice(0, maxCompactChildrenToUse)
                               }
 
                               return (
@@ -256,12 +265,13 @@ const ValueItem = (props: {
                                         indent={props.indent + 1}
                                         index={index}
                                         compact={props.compact}
+                                        parentIsExpanded={expanded}
                                       />
                                     </div>
                                   ))}
 
                                   {!showAllChilds &&
-                                    totalSize > compactMaxChilds && (
+                                    totalSize > maxCompactChildrenToUse && (
                                       <ButtonElement
                                         onClick={() => {
                                           showAllChilds = true
@@ -269,7 +279,7 @@ const ValueItem = (props: {
                                         class="show-all"
                                       >
                                         …show all (+
-                                        {totalSize - compactMaxChilds})
+                                        {totalSize - maxCompactChildrenToUse})
                                       </ButtonElement>
                                     )}
                                 </>
@@ -316,7 +326,10 @@ const ValueItem = (props: {
                               const totalSize = entries.length
 
                               if (!showAllChilds) {
-                                entries = entries.slice(0, compactMaxChilds)
+                                entries = entries.slice(
+                                  0,
+                                  maxCompactChildrenToUse,
+                                )
                               }
 
                               return (
@@ -328,12 +341,13 @@ const ValueItem = (props: {
                                         key={key}
                                         indent={props.indent + 1}
                                         compact={props.compact}
+                                        parentIsExpanded={expanded}
                                       />
                                     </div>
                                   ))}
 
                                   {!showAllChilds &&
-                                    totalSize > compactMaxChilds && (
+                                    totalSize > maxCompactChildrenToUse && (
                                       <ButtonElement
                                         onClick={() => {
                                           showAllChilds = true
@@ -341,7 +355,7 @@ const ValueItem = (props: {
                                         class="show-all"
                                       >
                                         …show all (+
-                                        {totalSize - compactMaxChilds})
+                                        {totalSize - maxCompactChildrenToUse})
                                       </ButtonElement>
                                     )}
                                 </>
@@ -393,6 +407,7 @@ export const ValueVisualizer = (props: ValueVisualizerProps) => {
         value={props.value}
         indent={0}
         compact={!!props.compact}
+        parentIsExpanded={true}
       />
     </div>
   )
