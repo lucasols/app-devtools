@@ -1,4 +1,4 @@
-import { dequal } from 'dequal'
+import { deepEqual } from '@lucasols/utils/deepEqual'
 import { produce } from 'immer'
 import {
   createEffect,
@@ -42,7 +42,7 @@ export function reconcile<T>(
 
     if (!currentValue) {
       final.push(item)
-    } else if (dequal(currentValue, item)) {
+    } else if (deepEqual(currentValue, item)) {
       final.push(currentValue)
     } else {
       final.push(item)

@@ -2,7 +2,6 @@ import ButtonElement from '@src/components/ButtonElement'
 import { Section } from '@src/components/Section'
 import { TableView } from '@src/components/TableView'
 import { ValueVisualizer } from '@src/components/ValueVisualizer'
-import { Diff } from '@src/pages/api-explorer/Diff'
 import { ApiCall, callsStore, lastAddedCallID } from '@src/stores/callsStore'
 import { setUiStore, uiStore } from '@src/stores/uiStore'
 import { ellipsis } from '@src/style/helpers/ellipsis'
@@ -174,11 +173,15 @@ export const RequestDetails = () => {
         <>
           <h1>
             <span class="type">
-              {selectedRequest.value.type === 'ws' ? `WS ${selectedRequest.value.subType}` : 'API'}
+              {selectedRequest.value.type === 'ws'
+                ? `WS ${selectedRequest.value.subType}`
+                : 'API'}
             </span>
             <span class="separator">{'|'}</span>
             {selectedRequest.value.callName}
-            {selectedRequest.value.alias && <span class="separator">{'|'}</span>}
+            {selectedRequest.value.alias && (
+              <span class="separator">{'|'}</span>
+            )}
             {selectedRequest.value.alias}
           </h1>
 
@@ -218,7 +221,6 @@ export const RequestDetails = () => {
             {!!selectedRequest.value.searchParams &&
               getTab('urlParams', 'URL Search Params')}
             {getTab('response', 'Response')}
-            {getTab('diff', 'Diff')}
           </div>
 
           <div class="details">
@@ -321,10 +323,6 @@ export const RequestDetails = () => {
                 <Section title={null}>
                   <ValueVisualizer value={selectedRequest.value.searchParams} />
                 </Section>
-              </Match>
-
-              <Match when={selectedTab === 'diff'}>
-                <Diff />
               </Match>
             </Switch>
           </div>

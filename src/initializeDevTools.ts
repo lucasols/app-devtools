@@ -1,7 +1,7 @@
 import { initializeApp } from '@src/initializeApp'
 import { Config, setConfig } from '@src/stores/callsStore'
 
-import tinykeys from 'tinykeys'
+import { tinykeys } from 'tinykeys'
 
 export function initializeDevTools({
   callsProcessor,
