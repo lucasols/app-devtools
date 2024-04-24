@@ -147,7 +147,7 @@ const ValueItem = (props: {
   let expanded = $signal(isInitiallyExpanded)
   let showAllChilds = $signal(!props.compact)
 
-  let maxCompactChildrenToUse = props.indent >= 2 ? 5 : compactMaxChildren
+  const maxCompactChildrenToUse = props.indent >= 2 ? 5 : compactMaxChildren
 
   return (
     <>
