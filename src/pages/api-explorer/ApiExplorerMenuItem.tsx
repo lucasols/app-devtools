@@ -1,13 +1,14 @@
 import ButtonElement from '@src/components/ButtonElement'
 import Icon from '@src/components/Icon'
-import { ApiCall, RequestSubTypes, RequestTypes } from '@src/stores/callsStore'
+import { ApiCall } from '@src/stores/callsStore'
 import { setUiStore, uiStore } from '@src/stores/uiStore'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
-import { colors, fonts } from '@src/style/theme'
+import { colors } from '@src/style/theme'
 import { createSignalRef } from '@utils/solid'
 import { css } from 'solid-styled-components'
+import { getTypeTag, typeTagStyle } from './typeTag'
 
 const menuItemStyle = css`
   &&& {
@@ -28,11 +29,6 @@ const menuItemStyle = css`
         text-align: left;
         ${inline({ gap: 8 })};
         flex: 1 1;
-
-        > .tag {
-          font-weight: 600;
-          font-family: ${fonts.decorative};
-        }
 
         > span {
           ${ellipsis};
@@ -103,7 +99,11 @@ export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
 
   const showSubitems = createSignalRef(props.item.subitemsWithAlias.length < 4)
 
-  const typeIcon = getTypeIcon(item.type, item.subType)
+  const typeTag = getTypeTag({
+    type: props.item.type,
+    subType: props.item.subType,
+    method: props.item.requests.at(-1)?.method,
+  })
 
   return (
     <div class={menuItemStyle}>
@@ -126,11 +126,10 @@ export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
           class="call-button"
         >
           <div
-            class="tag"
-            title={`${item.type}${item.subType ? ` (${item.subType})` : ''}`}
-            style={{ color: typeIcon.color }}
+            class={`${typeTagStyle} ${typeTag.class}`}
+            title={typeTag.description}
           >
-            {typeIcon.icon}
+            {typeTag.label}
           </div>
 
           <span title={item.name}>{item.name}</span>
@@ -192,48 +191,4 @@ function getLastLoadedRequestId(call: ApiCall, alias?: string): string | null {
     requests.at(-1)
 
   return lastLoaded?.id ?? null
-}
-
-function getTypeIcon(
-  type: RequestTypes,
-  subType: RequestSubTypes | undefined,
-): {
-  icon: string
-  color: string
-} {
-  if (type === 'ws') {
-    return {
-      icon: subType === 'send' ? 'S' : 'R',
-      color: '#6EE7B7',
-    }
-  }
-
-  if (type === 'fetch') {
-    return {
-      icon: 'F',
-      color: '#FDE047',
-    }
-  }
-
-  let icon = ''
-  const color = '#A78BFA'
-
-  if (subType) {
-    if (subType === 'create') {
-      icon = 'C'
-    } else if (subType === 'update') {
-      icon = 'U'
-    } else if (subType === 'delete') {
-      icon = 'D'
-    } else {
-      icon = subType[0]?.toUpperCase() || '?'
-    }
-  } else {
-    icon = 'M'
-  }
-
-  return {
-    icon,
-    color,
-  }
 }

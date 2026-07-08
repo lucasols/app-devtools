@@ -1,5 +1,7 @@
 import { openAddMarkerDialog } from '@src/components/AddMarkerDialog'
 import ButtonElement from '@src/components/ButtonElement'
+import Icon from '@src/components/Icon'
+import { getTypeTag, typeTagStyle } from '@src/pages/api-explorer/typeTag'
 import {
   ApiRequest,
   TimelineMarker,
@@ -14,7 +16,10 @@ import { formatNum } from '@src/utils/formatNum'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
+import { transition } from '@src/style/helpers/transition'
 import { colors, fonts } from '@src/style/theme'
+import { searchQueryMatch } from '@utils/searchQueryMatch'
+import { createSignalRef } from '@utils/solid'
 import dayjs from 'dayjs'
 import { createMemo, onCleanup } from 'solid-js'
 import { css } from 'solid-styled-components'
@@ -43,6 +48,55 @@ const containerStyle = css`
       opacity: 0.4;
       font-size: 14px;
       padding-top: 20px;
+    }
+  }
+`
+
+const controlsStyle = css`
+  &&& {
+    ${inline({ gap: 12 })};
+    flex-shrink: 0;
+
+    > .search {
+      ${inline({ gap: 8 })};
+      display: grid;
+      grid-template-columns: 14px 1fr;
+      width: 220px;
+      background: ${colors.white.alpha(0.05)};
+      border-radius: 4px;
+      --icon-size: 16px;
+      padding: 4px 0;
+      padding-left: 6px;
+
+      .icon {
+        color: ${colors.secondary.var};
+      }
+
+      input {
+        border: none;
+        background: transparent;
+        color: ${colors.white.var};
+        font-size: 13px;
+
+        &:focus {
+          outline: none;
+        }
+      }
+    }
+
+    > button {
+      font-size: 12px;
+      opacity: 0.5;
+      ${transition()};
+
+      &:hover {
+        opacity: 1;
+      }
+
+      &.active {
+        opacity: 1;
+        color: ${colors.primary.var};
+      }
     }
   }
 `
@@ -292,7 +346,12 @@ function clamp(value: number, min: number, max: number): number {
 
 const maxVisibleRows = 400
 
+type TypeFilter = 'all' | 'api' | 'ws' | 'error'
+
 export const TimelineViewPage = () => {
+  const search = createSignalRef('')
+  const typeFilter = createSignalRef<TypeFilter>('all')
+
   let now = $signal(Date.now())
 
   const nowInterval = window.setInterval(() => {
@@ -311,6 +370,33 @@ export const TimelineViewPage = () => {
     }
 
     return rows.sort((a, b) => a.request.startTime - b.request.startTime)
+  })
+
+  const filteredRows = createMemo(() => {
+    const activeFilter = typeFilter.value
+    const searchQuery = search.value.trim()
+
+    if (activeFilter === 'all' && !searchQuery) return allRows()
+
+    return allRows().filter((row) => {
+      if (activeFilter === 'api' && row.request.type === 'ws') return false
+
+      if (activeFilter === 'ws' && row.request.type !== 'ws') return false
+
+      if (activeFilter === 'error' && !row.request.isError) return false
+
+      if (searchQuery) {
+        const stringToMatch = `${row.callName} ${row.request.alias || ''} ${
+          row.request.method || ''
+        } ${row.request.subType || ''}`
+
+        if (!searchQueryMatch(searchQuery, stringToMatch).matched) {
+          return false
+        }
+      }
+
+      return true
+    })
   })
 
   function requestEndTime(request: ApiRequest): number {
@@ -454,7 +540,7 @@ export const TimelineViewPage = () => {
 
     if (!range) return []
 
-    return allRows().filter((row) => {
+    return filteredRows().filter((row) => {
       return (
         row.request.startTime <= range.end &&
         requestEndTime(row.request) >= range.start
@@ -508,6 +594,45 @@ export const TimelineViewPage = () => {
         <div class="empty">no requests tracked yet</div>
       ) : (
         <>
+          <div class={controlsStyle}>
+            <label class="search">
+              <Icon name="search" />
+              <input
+                type="text"
+                placeholder="Search"
+                value={search.value}
+                onInput={(e) => {
+                  search.value = e.currentTarget.value
+                }}
+              />
+            </label>
+
+            <ButtonElement
+              onClick={() => typeFilter.set('all')}
+              classList={{ active: typeFilter.value === 'all' }}
+            >
+              All
+            </ButtonElement>
+            <ButtonElement
+              onClick={() => typeFilter.set('api')}
+              classList={{ active: typeFilter.value === 'api' }}
+            >
+              API
+            </ButtonElement>
+            <ButtonElement
+              onClick={() => typeFilter.set('ws')}
+              classList={{ active: typeFilter.value === 'ws' }}
+            >
+              WebSocket
+            </ButtonElement>
+            <ButtonElement
+              onClick={() => typeFilter.set('error')}
+              classList={{ active: typeFilter.value === 'error' }}
+            >
+              Errors
+            </ButtonElement>
+          </div>
+
           <div
             class={brushStyle}
             ref={brushEl}
@@ -516,7 +641,7 @@ export const TimelineViewPage = () => {
             onPointerUp={onBrushPointerUp}
             title="Drag to filter a time range, click to reset"
           >
-            <For each={allRows()}>
+            <For each={filteredRows()}>
               {(row) => (
                 <div
                   class="tick"
@@ -694,6 +819,13 @@ export const TimelineViewPage = () => {
                       }}
                     >
                       <div class="label">
+                        <span
+                          class={`${typeTagStyle} ${
+                            getTypeTag(row.request).class
+                          }`}
+                        >
+                          {getTypeTag(row.request).label}
+                        </span>
                         <span class="name">{row.callName}</span>
                         {!!row.request.alias && (
                           <span class="alias">{row.request.alias}</span>

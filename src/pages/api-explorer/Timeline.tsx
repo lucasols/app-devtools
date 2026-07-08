@@ -15,6 +15,7 @@ import dayjs from 'dayjs'
 import { createMemo } from 'solid-js'
 import { css } from 'solid-styled-components'
 import { getRequestPayload } from './getRequestPayload'
+import { getTypeTag, typeTagStyle } from './typeTag'
 
 const containerStyle = css`
   &&& {
@@ -217,6 +218,7 @@ export const Timeline = () => {
             const relativeStartTime = startTime.fromNow()
 
             const payload = getRequestPayload(request)
+            const typeTag = getTypeTag(request)
 
             return (
               <div
@@ -240,6 +242,13 @@ export const Timeline = () => {
                     title={relativeStartTime}
                   >
                     {formattedStartTime}
+                  </span>
+
+                  <span
+                    class={`${typeTagStyle} ${typeTag.class}`}
+                    title={typeTag.description}
+                  >
+                    {typeTag.label}
                   </span>
 
                   {request.status === 'pending' && (

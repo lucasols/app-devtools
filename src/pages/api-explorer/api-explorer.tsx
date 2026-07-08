@@ -31,6 +31,8 @@ export const ApiExplorerPage = () => {
     } | null = null
 
     for (const [callID, call] of Object.entries(callsStore.calls)) {
+      if (call.type === 'ws') continue
+
       for (const request of call.requests) {
         if (request.status === 'pending') continue
 

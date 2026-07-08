@@ -94,6 +94,10 @@ export function clearLogs() {
   setLogsStore({ logs: [] })
 }
 
+export function removeLog(id: string) {
+  setLogsStore('logs', (logs) => logs.filter((log) => log.id !== id))
+}
+
 export function getLogExportEntry(
   log: DevtoolsLog,
   processDetails: (value: unknown) => unknown = (value) => value,

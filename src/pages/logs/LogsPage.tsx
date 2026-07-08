@@ -8,6 +8,7 @@ import {
   LogSeverity,
   getLogExportEntry,
   logsStore,
+  removeLog,
 } from '@src/stores/logsStore'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
@@ -203,7 +204,8 @@ const containerStyle = css`
           &:hover {
             background: ${colors.white.alpha(0.05)};
 
-            .copy {
+            .copy,
+            .delete {
               opacity: 1;
             }
           }
@@ -239,7 +241,8 @@ const containerStyle = css`
             ${ellipsis};
           }
 
-          .copy {
+          .copy,
+          .delete {
             ${inline()};
             flex-shrink: 0;
             padding: 2px;
@@ -252,6 +255,11 @@ const containerStyle = css`
               color: ${colors.white.var};
               background: ${colors.white.alpha(0.1)};
             }
+          }
+
+          .delete:hover {
+            color: ${colors.error.var};
+            background: ${colors.error.alpha(0.12)};
           }
         }
 
@@ -521,6 +529,17 @@ const LogRow = (props: {
           }}
         >
           <Icon name="copy" />
+        </span>
+
+        <span
+          class="delete"
+          title="Delete log"
+          onClick={(e) => {
+            e.stopPropagation()
+            removeLog(props.log.id)
+          }}
+        >
+          <Icon name="trash" />
         </span>
       </ButtonElement>
 
