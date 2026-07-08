@@ -5,6 +5,7 @@ import {
 } from '@src/stores/callsStore'
 import { setUiStore } from '@src/stores/uiStore'
 import { formatNum } from '@src/utils/formatNum'
+import { getCompositeKey } from '@ls-stack/utils/getCompositeKey'
 import { getUnusedResponseDataSize } from '@src/utils/getUnusedResponseData'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
@@ -269,15 +270,14 @@ export const StatsPage = () => {
     const groups = new Map<string, FlatRequest[]>()
 
     for (const item of apiRequests) {
-      const { payload, searchParams } = item.request
-
-      const searchParamsKey = searchParams
-        ? JSON.stringify(searchParams, Object.keys(searchParams).sort())
-        : ''
-
-      const key = `${item.callID}|${searchParamsKey}|${
-        tryExpression(() => JSON.stringify(payload)) || ''
-      }`
+      const key =
+        tryExpression(() =>
+          getCompositeKey({
+            callID: item.callID,
+            searchParams: item.request.searchParams,
+            payload: item.request.payload,
+          }),
+        ) || item.callID
 
       const group = groups.get(key)
 
