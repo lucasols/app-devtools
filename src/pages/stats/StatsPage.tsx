@@ -269,8 +269,14 @@ export const StatsPage = () => {
     const groups = new Map<string, FlatRequest[]>()
 
     for (const item of apiRequests) {
-      const key = `${item.callID}|${
-        tryExpression(() => JSON.stringify(item.request.payload)) || ''
+      const { payload, searchParams } = item.request
+
+      const searchParamsKey = searchParams
+        ? JSON.stringify(searchParams, Object.keys(searchParams).sort())
+        : ''
+
+      const key = `${item.callID}|${searchParamsKey}|${
+        tryExpression(() => JSON.stringify(payload)) || ''
       }`
 
       const group = groups.get(key)
@@ -511,7 +517,7 @@ export const StatsPage = () => {
       <div class={sectionStyle}>
         <h2>Duplicated requests</h2>
         <div class="hint">
-          requests with the same payload repeated within{' '}
+          requests with the same payload and url params repeated within{' '}
           {duplicatedWindowMs / 1000}s
         </div>
 
