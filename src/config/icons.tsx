@@ -24,19 +24,22 @@ export type Icons =
   | 'eye'
   | 'eye-off'
 
-const test = import.meta.glob('/src/assets/icons/*.svg', {
+const icons = import.meta.glob<string>('/src/assets/icons/*.svg', {
   eager: true,
-  as: 'raw',
+  query: '?raw',
+  import: 'default',
 })
 
 export function getIconSvg(icon: Icons): string {
-  const svg = test[`/src/assets/icons/${icon}.svg`]
+  const svg = icons[`/src/assets/icons/${icon}.svg`]
 
-  if (import.meta.env.DEV) {
-    if (!svg) {
+  if (svg === undefined) {
+    if (import.meta.env.DEV) {
       throw new Error(`Icon ${icon} not found`)
     }
+
+    return ''
   }
 
-  return svg as unknown as string
+  return svg
 }

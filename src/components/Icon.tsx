@@ -30,12 +30,10 @@ const Icon = (props: IconProps) => {
   return (
     <div
       class={`icon ${props.class || ''} ${style}`}
-      style={
-        {
-          color: props.color,
-          '--icon-size': props.size && parseUnit(props.size),
-        } as any
-      }
+      style={{
+        color: props.color,
+        '--icon-size': props.size && parseUnit(props.size),
+      }}
       innerHTML={icon}
     />
   )
