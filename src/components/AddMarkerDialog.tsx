@@ -6,9 +6,17 @@ import { stack } from '@src/style/helpers/stack'
 import { colors, fonts, shadows } from '@src/style/theme'
 import { showToast } from '@src/utils/toast'
 import { createSignalRef } from '@utils/solid'
+import dayjs from 'dayjs'
 import { css } from 'solid-styled-components'
 
-export const addMarkerDialogIsOpen = createSignalRef(false)
+export const addMarkerDialogState = createSignalRef<{
+  /** marker time, defaults to now */
+  time?: number
+} | null>(null)
+
+export function openAddMarkerDialog(atTime?: number) {
+  addMarkerDialogState.value = { time: atTime }
+}
 
 const overlayStyle = css`
   &&& {
@@ -36,6 +44,12 @@ const dialogStyle = css`
       font-size: 16px;
       font-family: ${fonts.decorative};
       color: ${colors.secondary.var};
+
+      > .time {
+        font-size: 11px;
+        color: ${colors.white.alpha(0.5)};
+        margin-left: 8px;
+      }
     }
 
     > input {
@@ -81,12 +95,14 @@ const dialogStyle = css`
 export const AddMarkerDialog = () => {
   let label = $signal('')
 
+  const markerTime = $(addMarkerDialogState.value?.time)
+
   function close() {
-    addMarkerDialogIsOpen.value = false
+    addMarkerDialogState.value = null
   }
 
   function submit() {
-    addMarker(label.trim() || undefined)
+    addMarker(label.trim() || undefined, markerTime)
     showToast('Marker added')
     close()
   }
@@ -101,7 +117,14 @@ export const AddMarkerDialog = () => {
       }}
     >
       <div class={dialogStyle}>
-        <h1>add marker</h1>
+        <h1>
+          add marker
+          {markerTime !== undefined && (
+            <span class="time">
+              at {dayjs(markerTime).format('HH:mm:ss.SSS')}
+            </span>
+          )}
+        </h1>
 
         <input
           type="text"

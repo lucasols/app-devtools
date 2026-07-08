@@ -1,7 +1,12 @@
+import { openAddMarkerDialog } from '@src/components/AddMarkerDialog'
+import ButtonElement from '@src/components/ButtonElement'
 import {
   ApiRequest,
   TimelineMarker,
   callsStore,
+  clearRequestsAfter,
+  clearRequestsBefore,
+  clearRequestsInRange,
   removeMarker,
 } from '@src/stores/callsStore'
 import { setUiStore } from '@src/stores/uiStore'
@@ -104,6 +109,39 @@ const brushStyle = css`
         height: 100%;
         border-radius: 2px;
         background: ${colors.primary.var};
+      }
+    }
+  }
+`
+
+const selectionActionsStyle = css`
+  &&& {
+    ${inline({ gap: 6 })};
+    flex-wrap: wrap;
+    flex-shrink: 0;
+
+    > button {
+      font-size: 11px;
+      font-family: ${fonts.decorative};
+      color: ${colors.white.alpha(0.7)};
+      border: 1px solid ${colors.white.alpha(0.15)};
+      border-radius: 4px;
+      padding: 3px 8px;
+      white-space: nowrap;
+
+      &:hover {
+        color: ${colors.white.var};
+        border-color: ${colors.white.alpha(0.35)};
+      }
+
+      &.danger:hover {
+        color: ${colors.error.var};
+        border-color: ${colors.error.alpha(0.5)};
+      }
+
+      &.marker:hover {
+        color: ${colors.warning.var};
+        border-color: ${colors.warning.alpha(0.5)};
       }
     }
   }
@@ -548,6 +586,64 @@ export const TimelineViewPage = () => {
             </span>
             <span>{dayjs(visibleRange()?.end).format('HH:mm:ss.SSS')}</span>
           </div>
+
+          <Show when={selection}>
+            {(sel) => (
+              <div class={selectionActionsStyle}>
+                <ButtonElement
+                  class="danger"
+                  title="Remove all requests that ended before the selection"
+                  onClick={() => clearRequestsBefore(sel().start)}
+                >
+                  clear requests before
+                </ButtonElement>
+
+                <ButtonElement
+                  title="Reset the selected time range"
+                  onClick={() => {
+                    selection = null
+                  }}
+                >
+                  remove selection
+                </ButtonElement>
+
+                <ButtonElement
+                  class="danger"
+                  title="Remove all requests that started after the selection"
+                  onClick={() => clearRequestsAfter(sel().end)}
+                >
+                  clear requests after
+                </ButtonElement>
+
+                <ButtonElement
+                  class="danger"
+                  title="Remove the requests inside the selection"
+                  onClick={() => {
+                    clearRequestsInRange(sel().start, sel().end)
+                    selection = null
+                  }}
+                >
+                  clear selected requests
+                </ButtonElement>
+
+                <ButtonElement
+                  class="marker"
+                  title="Add a marker at the selection start"
+                  onClick={() => openAddMarkerDialog(sel().start)}
+                >
+                  add marker before
+                </ButtonElement>
+
+                <ButtonElement
+                  class="marker"
+                  title="Add a marker at the selection end"
+                  onClick={() => openAddMarkerDialog(sel().end)}
+                >
+                  add marker after
+                </ButtonElement>
+              </div>
+            )}
+          </Show>
 
           <div class={waterfallStyle}>
             <div class="content">

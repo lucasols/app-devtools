@@ -1,6 +1,7 @@
 import {
   AddMarkerDialog,
-  addMarkerDialogIsOpen,
+  addMarkerDialogState,
+  openAddMarkerDialog,
 } from '@src/components/AddMarkerDialog'
 import ButtonElement from '@src/components/ButtonElement'
 import {
@@ -189,7 +190,7 @@ export const App = (props: { standalone?: boolean }) => {
             <ButtonElement
               title="Add a marker to the timeline"
               onClick={() => {
-                addMarkerDialogIsOpen.value = true
+                openAddMarkerDialog()
               }}
             >
               <Icon name="flag" />
@@ -258,7 +259,7 @@ export const App = (props: { standalone?: boolean }) => {
           <ExportHistoryDialog />
         </Show>
 
-        <Show when={addMarkerDialogIsOpen.value}>
+        <Show when={addMarkerDialogState.value}>
           <AddMarkerDialog />
         </Show>
 

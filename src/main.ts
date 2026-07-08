@@ -21,7 +21,11 @@ import {
   type DevtoolsLog,
   type LogSeverity,
 } from '@src/stores/logsStore'
-import { type RequestCaller } from '@src/stores/requestCallerStore'
+import {
+  type RequestCaller,
+  type RequestCallerInput,
+  type RequestCallerSelectOption,
+} from '@src/stores/requestCallerStore'
 
 export {
   initializeDevTools,
@@ -41,6 +45,8 @@ export {
   DevtoolsLog,
   LogSeverity,
   RequestCaller,
+  RequestCallerInput,
+  RequestCallerSelectOption,
 }
 
 if (import.meta.env.DEV) {
@@ -79,10 +85,26 @@ if (import.meta.env.DEV) {
       {
         name: 'mock api 2',
         methods: ['GET', 'POST'],
-        call: async ({ path }) => {
+        inputs: [
+          {
+            type: 'select',
+            name: 'env',
+            options: ['production', { value: 'stg', label: 'staging' }],
+          },
+          { type: 'string', name: 'trace-id', placeholder: 'optional trace id' },
+          { type: 'json', name: 'payload' },
+        ],
+        mapRequestToInputs: ({ payload }) => ({
+          env: 'stg',
+          payload:
+            payload === undefined || payload === null
+              ? ''
+              : JSON.stringify(payload, null, 2),
+        }),
+        call: async ({ path, payload }) => {
           await new Promise((resolve) => setTimeout(resolve, 300))
 
-          return { response: { ok: true, caller: 2, path }, status: 200 }
+          return { response: { ok: true, caller: 2, path, payload }, status: 200 }
         },
       },
     ],

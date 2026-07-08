@@ -1,3 +1,4 @@
+import { createResizablePanels } from '@src/components/resizablePanels'
 import { ApiExplorerMenu } from '@src/pages/api-explorer/ApiExplorerMenu'
 import { RequestDetails } from '@src/pages/api-explorer/RequestDetails'
 import { Timeline } from '@src/pages/api-explorer/Timeline'
@@ -9,11 +10,15 @@ import { css } from 'solid-styled-components'
 const containerStyle = css`
   &&& {
     display: grid;
-    grid-template-columns: 1fr 1fr 3fr;
   }
 `
 
 export const ApiExplorerPage = () => {
+  const panels = createResizablePanels({
+    storageKey: 'api-explorer',
+    initialSizes: [1, 1, 3],
+  })
+
   // while there is no manual selection, pin the selection to the last loaded
   // request so the details don't keep jumping to newly received requests
   createEffect(() => {
@@ -46,9 +51,14 @@ export const ApiExplorerPage = () => {
   })
 
   return (
-    <div class={containerStyle}>
+    <div
+      class={containerStyle}
+      style={{ 'grid-template-columns': panels.gridTemplateColumns() }}
+    >
       <ApiExplorerMenu />
+      <panels.Handle index={0} />
       <Timeline />
+      <panels.Handle index={1} />
       <RequestDetails />
     </div>
   )

@@ -1,5 +1,6 @@
 import { toggleDevTools } from '@src/initializeApp'
 import { Config, setConfig } from '@src/stores/callsStore'
+import { setMaxLogsSizeMb } from '@src/stores/logsStore'
 import {
   RequestCaller,
   setRequestCallers,
@@ -13,6 +14,8 @@ export function initializeDevTools({
   requestCallers,
   visibleRequestHeaders,
   sensitiveDataFields,
+  maxRequestsSizeMb,
+  maxLogsSizeMb,
 }: {
   callsProcessor?: Config['callsProcessor']
   /** use $mod for CMD or Ctrl */
@@ -35,6 +38,18 @@ export function initializeDevTools({
    * (token, password, secret, apiKey, etc)
    */
   sensitiveDataFields?: string[]
+  /**
+   * approximate max stored size (in MB, based on json string length) for
+   * requests across all call groups, oldest requests are evicted first to
+   * avoid memory issues in long-running sessions (default: 30)
+   */
+  maxRequestsSizeMb?: number
+  /**
+   * approximate max stored size (in MB, based on json string length) for
+   * logs, oldest logs are evicted first to avoid memory issues in
+   * long-running sessions (default: 10)
+   */
+  maxLogsSizeMb?: number
 }) {
   tinykeys(window, {
     [shortcut]: (e) => {
@@ -57,7 +72,12 @@ export function initializeDevTools({
     ...(callsProcessor ? { callsProcessor } : {}),
     ...(visibleRequestHeaders ? { visibleRequestHeaders } : {}),
     ...(sensitiveDataFields ? { sensitiveDataFields } : {}),
+    ...(maxRequestsSizeMb !== undefined ? { maxRequestsSizeMb } : {}),
   })
+
+  if (maxLogsSizeMb !== undefined) {
+    setMaxLogsSizeMb(maxLogsSizeMb)
+  }
 
   if (requestCallers) {
     setRequestCallers(requestCallers)

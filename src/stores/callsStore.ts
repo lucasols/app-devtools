@@ -1,4 +1,5 @@
 import { removeSensitiveData } from '@src/utils/removeSensitiveData'
+import { approxJsonSize } from '@utils/approxJsonSize'
 import { concatNonNullable, filterNonNullableElements } from '@utils/arrayUtils'
 import { assertIsNotNullish } from '@utils/assertions'
 import { createSignalRef } from '@utils/solid'
@@ -55,6 +56,11 @@ export type ApiRequest = {
    * opportunity shown in the stats tab
    */
   unusedResponseData: string[] | undefined
+  /**
+   * approximate stored size (json string length of payload/response/metadata
+   * plus a fixed overhead), used by the size-based eviction budget
+   */
+  approxSize: number
 }
 
 export type ApiCall = {
@@ -79,22 +85,18 @@ type State = {
   markers: TimelineMarker[]
 }
 
-/** generous limits to avoid memory leaks in long-running sessions */
-const maxRequestsPerCall = 200
-const maxTotalRequests = 2000
-
 export const [callsStore, setCallsStore] = createStore<State>({
   calls: {},
   markers: [],
 })
 
-export function addMarker(label?: string) {
+export function addMarker(label?: string, time?: number) {
   setCallsStore(
     produce((draft) => {
       draft.markers.push({
         id: nanoid(),
         label: label || `Marker ${draft.markers.length + 1}`,
-        time: Date.now(),
+        time: time ?? Date.now(),
       })
     }),
   )
@@ -113,6 +115,50 @@ export function clearHistory() {
     setCallsStore({ calls: {}, markers: [] })
     lastAddedCallID.value = ''
   })
+}
+
+/** pending requests have no end yet, so they only match "after" clears */
+function requestEndTimeOrInfinity(request: ApiRequest): number {
+  return request.status === 'pending'
+    ? Infinity
+    : request.startTime + request.duration
+}
+
+function removeRequests(shouldRemove: (request: ApiRequest) => boolean) {
+  batch(() => {
+    setCallsStore(
+      produce((draft) => {
+        for (const [callID, call] of Object.entries(draft.calls)) {
+          call.requests = call.requests.filter(
+            (request) => !shouldRemove(request),
+          )
+
+          if (call.requests.length === 0) {
+            delete draft.calls[callID]
+          }
+        }
+      }),
+    )
+
+    if (!callsStore.calls[lastAddedCallID.value]) {
+      lastAddedCallID.value = ''
+    }
+  })
+}
+
+export function clearRequestsBefore(time: number) {
+  removeRequests((request) => requestEndTimeOrInfinity(request) < time)
+}
+
+export function clearRequestsAfter(time: number) {
+  removeRequests((request) => request.startTime > time)
+}
+
+export function clearRequestsInRange(start: number, end: number) {
+  removeRequests(
+    (request) =>
+      request.startTime <= end && requestEndTimeOrInfinity(request) >= start,
+  )
 }
 
 /**
@@ -271,14 +317,26 @@ function normalizeWarnings(
   return normalized.length > 0 ? normalized : undefined
 }
 
+/** accounts for the fixed request fields (path, headers, timings, etc) */
+const requestBaseSize = 500
+
 function evictOldRequestsIfNeeded(draft: State) {
+  const maxTotalSize = config.maxRequestsSizeMb * 1024 * 1024
+
   let totalRequests = 0
+  let totalSize = 0
 
   for (const call of Object.values(draft.calls)) {
     totalRequests += call.requests.length
+
+    for (const callRequest of call.requests) {
+      totalSize += callRequest.approxSize
+    }
   }
 
-  while (totalRequests > maxTotalRequests) {
+  // always keep at least the newest request, even if it alone exceeds the
+  // budget
+  while (totalSize > maxTotalSize && totalRequests > 1) {
     let oldestCallID: string | null = null
     let oldestStartTime = Infinity
 
@@ -297,8 +355,10 @@ function evictOldRequestsIfNeeded(draft: State) {
 
     assertIsNotNullish(oldestCall)
 
-    oldestCall.requests.shift()
+    const evictedRequest = oldestCall.requests.shift()
+
     totalRequests--
+    totalSize -= evictedRequest ? evictedRequest.approxSize : 0
 
     if (oldestCall.requests.length === 0) {
       delete draft.calls[oldestCallID]
@@ -340,6 +400,12 @@ export type Config = {
    * `api_key`)
    */
   sensitiveDataFields: string[]
+  /**
+   * approximate max stored size (in MB, based on json string length) for
+   * requests across all call groups, oldest requests are evicted first to
+   * avoid memory issues in long-running sessions
+   */
+  maxRequestsSizeMb: number
 }
 
 const defaultSensitiveDataFields = [
@@ -359,6 +425,8 @@ let config: Config = {
   callsProcessor: [],
   visibleRequestHeaders: [],
   sensitiveDataFields: defaultSensitiveDataFields,
+  // generous limit to avoid memory issues in long-running sessions
+  maxRequestsSizeMb: 30,
 }
 
 export function setConfig(newConfig: Partial<Config>) {
@@ -526,10 +594,6 @@ export function addCall(request: {
 
       call.lastRequestStartTime = startTime
 
-      if (call.requests.length >= maxRequestsPerCall) {
-        call.requests.shift()
-      }
-
       const requestToAdd: ApiRequest = {
         id: requestID,
         duration: request.duration || 0,
@@ -550,6 +614,7 @@ export function addCall(request: {
         warnings: normalizeWarnings(request.warnings),
         headers: normalizeHeaders(request.headers),
         unusedResponseData: undefined,
+        approxSize: requestBaseSize + approxJsonSize(request.payload),
       }
 
       const payloadAlias = tryExpression(() =>
@@ -602,6 +667,8 @@ export function addCall(request: {
         pendingRequest.code = status
         pendingRequest.response = klona(response)
         pendingRequest.metadata = klona(metadata)
+        pendingRequest.approxSize +=
+          approxJsonSize(response) + approxJsonSize(metadata)
         pendingRequest.tags = filterNonNullableElements(
           concatNonNullable(pendingRequest.tags, tags),
         )
@@ -617,6 +684,8 @@ export function addCall(request: {
           pendingRequest.unusedResponseData =
             unusedFields.length > 0 ? unusedFields : undefined
         }
+
+        evictOldRequestsIfNeeded(draft)
       }),
     )
   }

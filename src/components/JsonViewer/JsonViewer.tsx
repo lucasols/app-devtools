@@ -517,6 +517,7 @@ export const JsonViewer = (props: JsonViewerProps) => {
   let searchMode = $signal<JsonSearchMode>('text')
   let showOriginalIndexes = $signal(false)
   let expandDepth = $signal<JsonViewerExpandDepth>('all')
+  let userSetExpandDepth = $signal(false)
   let treeRevision = $signal(1)
 
   let debounceTimeout: number | undefined
@@ -534,6 +535,7 @@ export const JsonViewer = (props: JsonViewerProps) => {
 
   function setExpandDepth(depth: JsonViewerExpandDepth) {
     expandDepth = depth
+    userSetExpandDepth = true
     treeRevision = treeRevision + 1
   }
 
@@ -546,10 +548,18 @@ export const JsonViewer = (props: JsonViewerProps) => {
     ),
   )
 
+  const autoExpandDepth = createMemo(() =>
+    getAutoExpandDepth(searchResult().value),
+  )
+
   const ctx = createMemo((): JsonTreeContext => {
     const isSearching = debouncedQuery.trim() !== ''
     const depth = expandDepth
     const compact = !!props.compact
+
+    // limits the initial nesting of large jsons, until the user explicitly
+    // sets an expansion
+    const autoDepth = userSetExpandDepth ? null : autoExpandDepth()
 
     return {
       compact,
@@ -557,6 +567,7 @@ export const JsonViewer = (props: JsonViewerProps) => {
         if (depth === 'none') return false
         if (typeof depth === 'number') return indent < depth
         if (isSearching) return true
+        if (autoDepth !== null && indent >= autoDepth) return false
         if (compact && indent >= 3) return false
         return true
       },
@@ -685,6 +696,48 @@ export const JsonViewer = (props: JsonViewerProps) => {
       )}
     </div>
   )
+}
+
+const maxAutoExpandNodes = 500
+const maxAutoExpandDepthScan = 30
+
+/**
+ * depth limit for the initial expansion of large jsons, or null when the json
+ * is small enough to be fully expanded. The limit is the deepest level that
+ * keeps the number of initially visible nodes under `maxAutoExpandNodes`.
+ */
+function getAutoExpandDepth(value: unknown): number | null {
+  let currentLevel: unknown[] = [value]
+  let visibleNodes = 0
+  let depth = 0
+
+  while (currentLevel.length > 0 && depth < maxAutoExpandDepthScan) {
+    const nextLevel: unknown[] = []
+
+    for (const node of currentLevel) {
+      const children = Array.isArray(node)
+        ? node
+        : isObject(node)
+        ? Object.values(node)
+        : null
+
+      if (!children) continue
+
+      for (const child of children) {
+        nextLevel.push(child)
+
+        if (visibleNodes + nextLevel.length > maxAutoExpandNodes) {
+          return Math.max(depth, 1)
+        }
+      }
+    }
+
+    visibleNodes += nextLevel.length
+    currentLevel = nextLevel
+    depth += 1
+  }
+
+  return null
 }
 
 function getObjId(obj: Record<string, unknown>): JSXElement | null {
