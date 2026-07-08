@@ -95,6 +95,11 @@ const selectedTab = createSignalRef<'api' | 'ws' | 'all'>('api')
 
 export const ApiExplorerMenu = () => {
   const search = createSignalRef('')
+  const listIsHovered = createSignalRef(false)
+
+  // order of the last unfrozen sort, used to keep the list stable while the
+  // mouse is over it so items don't move under the cursor
+  let unfrozenOrder = new Map<string, number>()
 
   const menuItems = createReconciledArray(() => {
     const [callSearch = '', requestSearch = ''] = search.value.split('>')
@@ -103,7 +108,7 @@ export const ApiExplorerMenu = () => {
 
     const filtered: MenuItem[] = []
 
-    for (const [key, value] of callsEntries.reverse()) {
+    for (const [key, value] of callsEntries) {
       const subitemsWithAlias = new Set<string>()
 
       if (selectedTab.value === 'api') {
@@ -134,6 +139,29 @@ export const ApiExplorerMenu = () => {
           },
         }),
         ...value,
+      })
+    }
+
+    if (!listIsHovered.value) {
+      // most recently active call first
+      filtered.sort((a, b) => b.lastRequestStartTime - a.lastRequestStartTime)
+
+      unfrozenOrder = new Map(filtered.map((item, index) => [item.id, index]))
+    } else {
+      filtered.sort((a, b) => {
+        const aOrder = unfrozenOrder.get(a.id)
+        const bOrder = unfrozenOrder.get(b.id)
+
+        if (aOrder !== undefined && bOrder !== undefined) {
+          return aOrder - bOrder
+        }
+
+        // calls added while the list is frozen go to the end
+        if (aOrder === undefined && bOrder === undefined) {
+          return b.lastRequestStartTime - a.lastRequestStartTime
+        }
+
+        return aOrder === undefined ? 1 : -1
       })
     }
 
@@ -188,7 +216,15 @@ export const ApiExplorerMenu = () => {
         />
       </label>
 
-      <div class={menuContainerStyle}>
+      <div
+        class={menuContainerStyle}
+        onMouseEnter={() => {
+          listIsHovered.value = true
+        }}
+        onMouseLeave={() => {
+          listIsHovered.value = false
+        }}
+      >
         <For each={menuItems()}>
           {(item, i) => {
             return (

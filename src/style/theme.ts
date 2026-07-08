@@ -31,5 +31,5 @@ export type ThemeColors = keyof typeof colors
 
 export const fonts = {
   primary: '"Work Sans", sans-serif',
-  decorative: '"Fira Code", monospaced',
+  decorative: '"Fira Code", monospace',
 }

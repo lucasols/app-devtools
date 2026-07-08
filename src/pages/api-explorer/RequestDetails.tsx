@@ -1,9 +1,22 @@
 import ButtonElement from '@src/components/ButtonElement'
+import Icon from '@src/components/Icon'
+import { JsonViewer } from '@src/components/JsonViewer/JsonViewer'
 import { Section } from '@src/components/Section'
 import { TableView } from '@src/components/TableView'
-import { ValueVisualizer } from '@src/components/ValueVisualizer'
-import { ApiCall, callsStore, lastAddedCallID } from '@src/stores/callsStore'
+import {
+  ApiCall,
+  callsStore,
+  getDisplayHeaders,
+  lastAddedCallID,
+} from '@src/stores/callsStore'
+import { openRequestInCaller, requestCallerStore } from '@src/stores/requestCallerStore'
 import { setUiStore, uiStore } from '@src/stores/uiStore'
+import { copyToClipboard } from '@src/utils/copyToClipboard'
+import {
+  getUnusedResponseDataMap,
+  getUnusedResponseDataSize,
+} from '@src/utils/getUnusedResponseData'
+import { getRequestAsCurl } from '@src/utils/requestToCurl'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
@@ -71,6 +84,37 @@ const containerStyle = css`
           font-weight: 600;
           border-color: ${colors.error.alpha(0.6)};
         }
+
+        &.warning {
+          ${inline({ gap: 4 })};
+          font-weight: 600;
+          --icon-size: 12px;
+        }
+
+        &.pending {
+          color: ${colors.secondary.var};
+          border-color: ${colors.secondary.alpha(0.6)};
+        }
+      }
+
+      .actions {
+        margin-left: auto;
+        ${inline({ gap: 8 })};
+
+        > button {
+          ${inline({ gap: 4 })};
+          font-size: 12px;
+          color: ${colors.white.alpha(0.7)};
+          padding: 2px 6px;
+          border-radius: 4px;
+          background: ${colors.white.alpha(0.05)};
+          --icon-size: 13px;
+
+          &:hover {
+            color: ${colors.white.var};
+            background: ${colors.white.alpha(0.1)};
+          }
+        }
       }
     }
 
@@ -81,6 +125,33 @@ const containerStyle = css`
       flex: 1 1;
       overflow-y: auto;
       padding-bottom: 20px;
+    }
+  }
+`
+
+const warningsListStyle = css`
+  &&& {
+    ${stack({ align: 'left' })};
+    gap: 6px;
+
+    > .warning-item {
+      ${inline({ gap: 8 })};
+      align-items: flex-start;
+      font-size: 13px;
+      color: ${colors.warning.var};
+      --icon-size: 14px;
+      align-self: stretch;
+
+      > .icon {
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      > .warning-content {
+        ${stack({ align: 'left' })};
+        gap: 4px;
+        flex: 1 1;
+      }
     }
   }
 `
@@ -154,17 +225,56 @@ export const RequestDetails = () => {
     )
   }
 
-  const responseSize = createMemoRef(() => {
-    if (!selectedRequest.value?.response) return false
+  const displayHeaders = createMemoRef(() => {
+    return selectedRequest.value
+      ? getDisplayHeaders(selectedRequest.value)
+      : null
+  })
 
-    const sizeInBytes = JSON.stringify(selectedRequest.value.response).length
-
+  function formatBytes(sizeInBytes: number) {
     return formatNum(sizeInBytes, {
       unit: 'byte',
       style: 'unit',
       notation: 'compact',
       unitDisplay: 'narrow',
     })
+  }
+
+  const responseSize = createMemoRef(() => {
+    if (!selectedRequest.value?.response) return false
+
+    return formatBytes(JSON.stringify(selectedRequest.value.response).length)
+  })
+
+  const unusedResponseData = createMemoRef(() => {
+    const request = selectedRequest.value
+
+    if (!request?.unusedResponseData?.length) return null
+
+    return getUnusedResponseDataMap(
+      request.response,
+      request.unusedResponseData,
+    )
+  })
+
+  const unusedResponseDataSize = createMemoRef(() => {
+    const request = selectedRequest.value
+
+    if (!request?.unusedResponseData?.length || !request.response) return false
+
+    const unusedBytes = getUnusedResponseDataSize(
+      request.response,
+      request.unusedResponseData,
+    )
+
+    if (unusedBytes === 0) return false
+
+    const responseBytes = JSON.stringify(request.response).length
+
+    const percent =
+      responseBytes > 0 ? Math.round((unusedBytes / responseBytes) * 100) : 0
+
+    return `${formatBytes(unusedBytes)} (${percent}% of response)`
   })
 
   return (
@@ -210,9 +320,57 @@ export const RequestDetails = () => {
               <div class="tag error">Has Error</div>
             )}
 
+            {!!selectedRequest.value.warnings?.length && (
+              <div class="tag warning">
+                <Icon name="alert-triangle" />
+                {selectedRequest.value.warnings.length === 1
+                  ? 'Has Warning'
+                  : `${selectedRequest.value.warnings.length} Warnings`}
+              </div>
+            )}
+
+            {selectedRequest.value.status === 'pending' && (
+              <div class="tag pending">Pending</div>
+            )}
+
             <For each={selectedRequest.value.tags}>
               {(tag) => <div class="tag">{tag}</div>}
             </For>
+
+            <div class="actions">
+              {selectedRequest.value.type !== 'ws' && (
+                <ButtonElement
+                  title="Copy request as cURL"
+                  onClick={() => {
+                    const request = selectedRequest.value
+
+                    if (request) {
+                      void copyToClipboard(getRequestAsCurl(request))
+                    }
+                  }}
+                >
+                  <Icon name="terminal" />
+                  cURL
+                </ButtonElement>
+              )}
+
+              {selectedRequest.value.type !== 'ws' &&
+                requestCallerStore.callers.length > 0 && (
+                  <ButtonElement
+                    title="Modify and resend this request in the caller tab"
+                    onClick={() => {
+                      const request = selectedRequest.value
+
+                      if (request) {
+                        openRequestInCaller(request)
+                      }
+                    }}
+                  >
+                    <Icon name="send" />
+                    Modify request
+                  </ButtonElement>
+                )}
+            </div>
           </div>
 
           <div class={tabsStyle}>
@@ -226,9 +384,32 @@ export const RequestDetails = () => {
           <div class="details">
             <Switch>
               <Match when={selectedTab === 'summary'}>
+                {!!selectedRequest.value.warnings?.length && (
+                  <Section title="Warnings">
+                    <div class={warningsListStyle}>
+                      <For each={selectedRequest.value.warnings}>
+                        {(warning) => (
+                          <div class="warning-item">
+                            <Icon name="alert-triangle" />
+                            <div class="warning-content">
+                              <span>{warning.message}</span>
+                              {warning.details !== undefined && (
+                                <JsonViewer
+                                  value={warning.details}
+                                  compact
+                                />
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </For>
+                    </div>
+                  </Section>
+                )}
+
                 {!!selectedRequest.value.payload && (
                   <Section title="Payload">
-                    <ValueVisualizer
+                    <JsonViewer
                       value={selectedRequest.value.payload}
                       compact
                     />
@@ -237,7 +418,7 @@ export const RequestDetails = () => {
 
                 {!!selectedRequest.value.searchParams && (
                   <Section title="URL Search Params">
-                    <ValueVisualizer
+                    <JsonViewer
                       value={selectedRequest.value.searchParams}
                       compact
                     />
@@ -246,8 +427,17 @@ export const RequestDetails = () => {
 
                 {!!selectedRequest.value.response && (
                   <Section title="Response">
-                    <ValueVisualizer
+                    <JsonViewer
                       value={selectedRequest.value.response}
+                      compact
+                    />
+                  </Section>
+                )}
+
+                {!!unusedResponseData.value && (
+                  <Section title="Unused response data">
+                    <JsonViewer
+                      value={unusedResponseData.value}
                       compact
                     />
                   </Section>
@@ -258,23 +448,28 @@ export const RequestDetails = () => {
                     rows={[
                       selectedRequest.value.type !== 'ws' && {
                         name: 'Duration',
-                        value: (
-                          <span
-                            style={{
-                              color:
-                                selectedRequest.value.duration < 500
-                                  ? colors.success.var
-                                  : selectedRequest.value.duration > 1000
-                                  ? colors.error.var
-                                  : undefined,
-                            }}
-                          >
-                            {formatNum(selectedRequest.value.duration, {
-                              maximumFractionDigits: 0,
-                            })}{' '}
-                            ms
-                          </span>
-                        ),
+                        value:
+                          selectedRequest.value.status === 'pending' ? (
+                            <span style={{ color: colors.secondary.var }}>
+                              pending…
+                            </span>
+                          ) : (
+                            <span
+                              style={{
+                                color:
+                                  selectedRequest.value.duration < 500
+                                    ? colors.success.var
+                                    : selectedRequest.value.duration > 1000
+                                    ? colors.error.var
+                                    : undefined,
+                              }}
+                            >
+                              {formatNum(selectedRequest.value.duration, {
+                                maximumFractionDigits: 0,
+                              })}{' '}
+                              ms
+                            </span>
+                          ),
                       },
                       {
                         name: 'Start Time',
@@ -296,32 +491,58 @@ export const RequestDetails = () => {
                         name: 'Avg. Response Size',
                         value: responseSize.value,
                       },
+                      !!unusedResponseDataSize.value && {
+                        name: 'Unused Data Size',
+                        value: (
+                          <span style={{ color: colors.warning.var }}>
+                            {unusedResponseDataSize.value}
+                          </span>
+                        ),
+                      },
                     ]}
                   />
                 </Section>
 
                 <Show when={selectedRequest.value.type !== 'ws'}>
                   <Section title="Metadata">
-                    <ValueVisualizer value={selectedRequest.value.metadata} />
+                    <JsonViewer value={selectedRequest.value.metadata} />
                   </Section>
                 </Show>
+
+                {!!displayHeaders.value && (
+                  <Section title="Headers">
+                    <JsonViewer
+                      value={displayHeaders.value}
+                      compact
+                    />
+                  </Section>
+                )}
               </Match>
 
               <Match when={selectedTab === 'payload'}>
                 <Section title={null}>
-                  <ValueVisualizer value={selectedRequest.value.payload} />
+                  <JsonViewer
+                    value={selectedRequest.value.payload}
+                    search
+                  />
                 </Section>
               </Match>
 
               <Match when={selectedTab === 'response'}>
                 <Section title={null}>
-                  <ValueVisualizer value={selectedRequest.value.response} />
+                  <JsonViewer
+                    value={selectedRequest.value.response}
+                    search
+                  />
                 </Section>
               </Match>
 
               <Match when={selectedTab === 'urlParams'}>
                 <Section title={null}>
-                  <ValueVisualizer value={selectedRequest.value.searchParams} />
+                  <JsonViewer
+                    value={selectedRequest.value.searchParams}
+                    search
+                  />
                 </Section>
               </Match>
             </Switch>

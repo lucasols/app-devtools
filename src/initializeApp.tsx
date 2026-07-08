@@ -6,17 +6,15 @@ import Root from '@src/Root'
 import { addGoogleFonts } from '@src/utils/addGoogleFonts'
 
 let unmount: () => void = () => {}
-let isInitialized = false
+let isOpen = false
 
-export function initializeApp() {
+/** opens the devtools panel, does nothing if it is already open */
+export function openDevTools() {
+  if (isOpen) return
+
+  isOpen = true
+
   dayjs.extend(relativeTime)
-
-  if (isInitialized) {
-    unmountApp()
-    return
-  }
-
-  isInitialized = true
 
   addGoogleFonts()
 
@@ -34,7 +32,22 @@ export function initializeApp() {
   unmount = render(() => <Root />, devToolsRoot)
 }
 
-export function unmountApp() {
-  isInitialized = false
+/** closes the devtools panel, does nothing if it is not open */
+export function closeDevTools() {
+  if (!isOpen) return
+
+  isOpen = false
   unmount()
+}
+
+export function toggleDevTools() {
+  if (isOpen) {
+    closeDevTools()
+  } else {
+    openDevTools()
+  }
+}
+
+export function devToolsIsOpen(): boolean {
+  return isOpen
 }

@@ -1,3 +1,4 @@
+import { removeSensitiveData } from '@src/utils/removeSensitiveData'
 import { concatNonNullable, filterNonNullableElements } from '@utils/arrayUtils'
 import { assertIsNotNullish } from '@utils/assertions'
 import { createSignalRef } from '@utils/solid'
@@ -18,12 +19,15 @@ export type RequestSubTypes =
 
 export type RequestTypes = 'ws' | 'fetch' | 'mutation'
 
+export type RequestStatus = 'pending' | 'success' | 'error'
+
 export type ApiRequest = {
   id: string
   alias?: string
   payload: unknown
   response: unknown
   metadata: unknown
+  status: RequestStatus
   isError: boolean
   path: string
   searchParams: Record<string, string> | null
@@ -35,6 +39,22 @@ export type ApiRequest = {
   pathParams: Record<string, string | null> | null
   code: number | undefined
   tags: string[]
+  /**
+   * request headers, shown in the request details with values replaced by
+   * type descriptions (unless allowed by the `visibleRequestHeaders`
+   * config), full values are only used to generate the copy as cURL command
+   */
+  headers: Record<string, string> | undefined
+  /**
+   * warnings attached to the request, e.g. deprecated endpoint usage or
+   * slow responses, highlighted in the ui like errors are
+   */
+  warnings: RequestWarning[] | undefined
+  /**
+   * response fields that were not used by the app, an optimization
+   * opportunity shown in the stats tab
+   */
+  unusedResponseData: string[] | undefined
 }
 
 export type ApiCall = {
@@ -46,15 +66,165 @@ export type ApiCall = {
   requests: ApiRequest[]
 }
 
+export type TimelineMarker = {
+  id: string
+  label: string
+  time: number
+}
+
 type State = {
   calls: {
     [callID: string]: ApiCall
   }
+  markers: TimelineMarker[]
 }
+
+/** generous limits to avoid memory leaks in long-running sessions */
+const maxRequestsPerCall = 200
+const maxTotalRequests = 2000
 
 export const [callsStore, setCallsStore] = createStore<State>({
   calls: {},
+  markers: [],
 })
+
+export function addMarker(label?: string) {
+  setCallsStore(
+    produce((draft) => {
+      draft.markers.push({
+        id: nanoid(),
+        label: label || `Marker ${draft.markers.length + 1}`,
+        time: Date.now(),
+      })
+    }),
+  )
+}
+
+export function removeMarker(id: string) {
+  setCallsStore(
+    produce((draft) => {
+      draft.markers = draft.markers.filter((marker) => marker.id !== id)
+    }),
+  )
+}
+
+export function clearHistory() {
+  batch(() => {
+    setCallsStore({ calls: {}, markers: [] })
+    lastAddedCallID.value = ''
+  })
+}
+
+/**
+ * returns the request headers safe to show in the ui: values are replaced
+ * by type descriptions via `removeSensitiveData`, except for headers
+ * explicitly allowed by the `visibleRequestHeaders` config which keep their
+ * raw values
+ */
+export function getDisplayHeaders(
+  request: ApiRequest,
+): Record<string, unknown> | null {
+  if (!request.headers) return null
+
+  const allowedNames = new Set(
+    config.visibleRequestHeaders.map((name) => name.toLowerCase()),
+  )
+
+  const display: Record<string, unknown> = {}
+
+  for (const [name, value] of Object.entries(request.headers)) {
+    display[name] = allowedNames.has(name.toLowerCase())
+      ? value
+      : removeSensitiveData(value)
+  }
+
+  return display
+}
+
+function normalizeHeaders(
+  headers: Record<string, string | null | undefined> | undefined,
+): Record<string, string> | undefined {
+  if (!headers) return undefined
+
+  const normalized: Record<string, string> = {}
+  let hasHeaders = false
+
+  for (const [name, value] of Object.entries(headers)) {
+    if (typeof value === 'string') {
+      normalized[name] = value
+      hasHeaders = true
+    }
+  }
+
+  return hasHeaders ? normalized : undefined
+}
+
+export type RequestWarning = {
+  message: string
+  /** optional structured data attached to the warning */
+  details?: unknown
+}
+
+export type RequestWarningInput = string | RequestWarning | null | undefined
+
+function normalizeWarnings(
+  warnings: RequestWarningInput[] | undefined,
+): RequestWarning[] | undefined {
+  if (!warnings) return undefined
+
+  const normalized: RequestWarning[] = []
+
+  for (const warning of warnings) {
+    if (!warning) continue
+
+    if (typeof warning === 'string') {
+      normalized.push({ message: warning })
+    } else {
+      normalized.push({
+        message: warning.message,
+        details:
+          warning.details !== undefined ? klona(warning.details) : undefined,
+      })
+    }
+  }
+
+  return normalized.length > 0 ? normalized : undefined
+}
+
+function evictOldRequestsIfNeeded(draft: State) {
+  let totalRequests = 0
+
+  for (const call of Object.values(draft.calls)) {
+    totalRequests += call.requests.length
+  }
+
+  while (totalRequests > maxTotalRequests) {
+    let oldestCallID: string | null = null
+    let oldestStartTime = Infinity
+
+    for (const [callID, call] of Object.entries(draft.calls)) {
+      const firstRequest = call.requests[0]
+
+      if (firstRequest && firstRequest.startTime < oldestStartTime) {
+        oldestStartTime = firstRequest.startTime
+        oldestCallID = callID
+      }
+    }
+
+    if (!oldestCallID) break
+
+    const oldestCall = draft.calls[oldestCallID]
+
+    assertIsNotNullish(oldestCall)
+
+    oldestCall.requests.shift()
+    totalRequests--
+
+    if (oldestCall.requests.length === 0) {
+      delete draft.calls[oldestCallID]
+    }
+  }
+}
 
 export const lastAddedCallID = createSignalRef('')
 
@@ -77,10 +247,17 @@ export type Config = {
     }) => string
     payloadAlias?: (payload: any, request: ApiRequest) => string
   }[]
+  /**
+   * request header values are masked in the ui by default (replaced by type
+   * descriptions) as they may contain sensitive data, headers listed here
+   * (case-insensitive) show their raw values
+   */
+  visibleRequestHeaders: string[]
 }
 
 let config: Config = {
   callsProcessor: [],
+  visibleRequestHeaders: [],
 }
 
 export function setConfig(newConfig: Partial<Config>) {
@@ -96,6 +273,17 @@ export type RegisterCallResult = (props: {
   response: unknown
   metadata?: unknown
   tags?: (string | null | undefined)[] | undefined
+  /**
+   * warnings attached to the request, e.g. deprecated endpoint usage or
+   * slow responses, highlighted in the ui like errors are
+   */
+  warnings?: RequestWarningInput[] | undefined
+  /**
+   * response fields (e.g. object paths like `user.settings`) that were not
+   * used by the app, e.g. fields not declared in the response schema, shown
+   * in the stats tab as an optimization opportunity
+   */
+  unusedResponseData?: (string | null | undefined)[] | undefined
 }) => void
 
 export function addWebsocketEvent({
@@ -135,8 +323,147 @@ export function addCall(request: {
   startTime?: number
   duration?: number
   tags?: (string | null | undefined)[]
+  warnings?: RequestWarningInput[]
+  /**
+   * request headers, shown in the request details with values replaced by
+   * type descriptions (unless allowed by the `visibleRequestHeaders`
+   * config), full values are only used to generate the copy as cURL command
+   */
+  headers?: Record<string, string | null | undefined>
 }): RegisterCallResult {
   const startTime = request.startTime || Date.now()
+
+  const requestID = nanoid()
+  let requestCallID: string | null = null
+
+  setCallsStore(
+    produce((draft) => {
+      const pathURL = tryExpression(
+        () => new URL(request.path, 'http://localhost'),
+      )
+
+      assertIsNotNullish(pathURL)
+
+      const searchParams =
+        pathURL.searchParams.toString() !== ''
+          ? Object.fromEntries(pathURL.searchParams.entries())
+          : null
+
+      let pathParams: Record<string, string | null> | null = null
+
+      const relatedConfig = config.callsProcessor.find((processor) => {
+        if (typeof processor.match === 'string') {
+          if (processor.matchType && processor.matchType !== request.type) {
+            return false
+          }
+
+          if (
+            processor.matchSubType &&
+            request.subType &&
+            processor.matchSubType.includes(request.subType)
+          ) {
+            return false
+          }
+
+          const pattern = matchURLPattern(pathURL.pathname, processor.match)
+
+          if (pattern) {
+            pathParams = pattern
+            return true
+          }
+
+          return false
+        } else {
+          return processor.match({
+            url: pathURL,
+            type: request.type,
+            subType: request.subType,
+          })
+        }
+      })
+
+      const normalizedCallId =
+        relatedConfig?.callID?.({
+          url: pathURL,
+          type: request.type,
+          subType: request.subType,
+        }) ||
+        (typeof relatedConfig?.match === 'string' &&
+          `${request.type}${request.subType || ''}${relatedConfig.match}`)
+
+      const callID = btoa(
+        normalizedCallId ||
+          `${pathURL.pathname}|${request.type}${
+            request.subType ? `|${request.subType}` : ''
+          }`,
+      )
+
+      requestCallID = callID
+
+      const callNameNormalizer = relatedConfig?.callName
+
+      if (!draft.calls[callID]) {
+        draft.calls[callID] = {
+          name: (
+            callNameNormalizer ||
+            (typeof relatedConfig?.match === 'string' && relatedConfig.match) ||
+            pathURL.pathname
+          ).replace(/^\//, ''),
+          path: pathURL.pathname.replace(/^\//, ''),
+          lastRequestStartTime: startTime,
+          requests: [],
+          type: request.type,
+          subType: request.subType,
+        }
+
+        lastAddedCallID.value = callID
+      }
+
+      const call = draft.calls[callID]
+
+      assertIsNotNullish(call)
+
+      call.lastRequestStartTime = startTime
+
+      if (call.requests.length >= maxRequestsPerCall) {
+        call.requests.shift()
+      }
+
+      const requestToAdd: ApiRequest = {
+        id: requestID,
+        duration: request.duration || 0,
+        pathParams,
+        status: 'pending',
+        isError: false,
+        metadata: undefined,
+        response: undefined,
+        path: request.path.replace(/^\//, ''),
+        payload: klona(request.payload),
+        searchParams,
+        startTime,
+        type: request.type,
+        method: request.method,
+        subType: request.subType,
+        code: undefined,
+        tags: filterNonNullableElements(concatNonNullable(request.tags, [])),
+        warnings: normalizeWarnings(request.warnings),
+        headers: normalizeHeaders(request.headers),
+        unusedResponseData: undefined,
+      }
+
+      const payloadAlias = tryExpression(() =>
+        relatedConfig?.payloadAlias?.(requestToAdd.payload, requestToAdd),
+      )
+
+      if (payloadAlias) {
+        requestToAdd.alias = payloadAlias
+      }
+
+      call.requests.push(requestToAdd)
+
+      evictOldRequestsIfNeeded(draft)
+    }),
+  )
 
   return ({
     isError,
@@ -144,134 +471,51 @@ export function addCall(request: {
     response,
     metadata,
     tags,
+    warnings,
+    unusedResponseData,
   }: {
     isError: boolean
     status?: number
     response: unknown
     metadata?: unknown
     tags?: (string | null | undefined)[]
+    warnings?: RequestWarningInput[]
+    unusedResponseData?: (string | null | undefined)[]
   }) => {
     const duration = request.duration || Date.now() - startTime
 
     setCallsStore(
       produce((draft) => {
-        const pathURL = tryExpression(
-          () => new URL(request.path, 'http://localhost'),
+        const call = requestCallID ? draft.calls[requestCallID] : undefined
+
+        // the request may have been evicted or cleared in the meantime
+        const pendingRequest = call?.requests.find(
+          (callRequest) => callRequest.id === requestID,
         )
 
-        assertIsNotNullish(pathURL)
+        if (!pendingRequest) return
 
-        const searchParams =
-          pathURL.searchParams.toString() !== ''
-            ? Object.fromEntries(pathURL.searchParams.entries())
-            : null
-
-        let pathParams: Record<string, string | null> | null = null
-
-        const relatedConfig = config.callsProcessor.find((processor) => {
-          if (typeof processor.match === 'string') {
-            if (processor.matchType && processor.matchType !== request.type) {
-              return false
-            }
-
-            if (
-              processor.matchSubType &&
-              request.subType &&
-              processor.matchSubType.includes(request.subType)
-            ) {
-              return false
-            }
-
-            const pattern = matchURLPattern(pathURL.pathname, processor.match)
-
-            if (pattern) {
-              pathParams = pattern
-              return true
-            }
-
-            return false
-          } else {
-            return processor.match({
-              url: pathURL,
-              type: request.type,
-              subType: request.subType,
-            })
-          }
-        })
-
-        const normalizedCallId =
-          relatedConfig?.callID?.({
-            url: pathURL,
-            type: request.type,
-            subType: request.subType,
-          }) ||
-          (typeof relatedConfig?.match === 'string' &&
-            `${request.type}${request.subType || ''}${relatedConfig.match}`)
-
-        const callID = btoa(
-          normalizedCallId ||
-            `${pathURL.pathname}|${request.type}${
-              request.subType ? `|${request.subType}` : ''
-            }`,
+        pendingRequest.status = isError ? 'error' : 'success'
+        pendingRequest.isError = isError
+        pendingRequest.duration = duration
+        pendingRequest.code = status
+        pendingRequest.response = klona(response)
+        pendingRequest.metadata = klona(metadata)
+        pendingRequest.tags = filterNonNullableElements(
+          concatNonNullable(pendingRequest.tags, tags),
+        )
+        pendingRequest.warnings = normalizeWarnings(
+          concatNonNullable(pendingRequest.warnings, warnings),
         )
 
-        const callNameNormalizer = relatedConfig?.callName
+        if (unusedResponseData) {
+          const unusedFields = filterNonNullableElements(
+            concatNonNullable(unusedResponseData, []),
+          )
 
-        if (!draft.calls[callID]) {
-          draft.calls[callID] = {
-            name: (
-              callNameNormalizer ||
-              (typeof relatedConfig?.match === 'string' &&
-                relatedConfig.match) ||
-              pathURL.pathname
-            ).replace(/^\//, ''),
-            path: pathURL.pathname.replace(/^\//, ''),
-            lastRequestStartTime: startTime,
-            requests: [],
-            type: request.type,
-            subType: request.subType,
-          }
-
-          lastAddedCallID.value = callID
+          pendingRequest.unusedResponseData =
+            unusedFields.length > 0 ? unusedFields : undefined
         }
-
-        const call = draft.calls[callID]
-
-        assertIsNotNullish(call)
-
-        if (call.requests.length > 100) {
-          call.requests.shift()
-        }
-
-        const requestToAdd: ApiRequest = {
-          id: nanoid(),
-          duration,
-          pathParams,
-          isError,
-          metadata: klona(metadata),
-          response: klona(response),
-          path: request.path.replace(/^\//, ''),
-          payload: klona(request.payload),
-          searchParams,
-          startTime,
-          type: request.type,
-          method: request.method,
-          subType: request.subType,
-          code: status,
-          tags: filterNonNullableElements(
-            concatNonNullable(request.tags, tags),
-          ),
-        }
-
-        const payloadAlias = tryExpression(() =>
-          relatedConfig?.payloadAlias?.(requestToAdd.payload, requestToAdd),
-        )
-
-        if (payloadAlias) {
-          requestToAdd.alias = payloadAlias
-        }
-
-        call.requests.push(requestToAdd)
       }),
     )
   }
@@ -279,6 +523,13 @@ export function addCall(request: {
 
 if (import.meta.env.DEV) {
   const mockedCalls = await import('@src/mocks/mockedRequests.json')
+
+  // shift the recorded mock timestamps so they end 1 minute before now,
+  // keeping their relative spacing
+  const lastMockedStartTime = Math.max(
+    ...mockedCalls.default.map((call) => call.stats.startTime),
+  )
+  const mockTimeOffset = Date.now() - lastMockedStartTime - 60_000
 
   setTimeout(() => {
     batch(() => {
@@ -312,13 +563,22 @@ if (import.meta.env.DEV) {
             return undefined
           })(),
           method: call.request.method,
-          startTime: call.stats.startTime,
+          startTime: call.stats.startTime + mockTimeOffset,
           duration: call.stats.time,
         })({
           isError: call.response.status >= 400,
           status: call.response.status,
           response: call.response.body,
           metadata: call.metadata,
+          warnings: call.request.path.includes('getPlan')
+            ? [
+                'This endpoint is deprecated, use /v3/org/plan instead',
+                'Response is missing the `plan_limits` field',
+              ]
+            : undefined,
+          unusedResponseData: call.request.path.includes('list')
+            ? ['data[*].internal_meta', 'data[*].legacy_id', 'debug_info']
+            : undefined,
         })
       })
     })
@@ -354,4 +614,42 @@ if (import.meta.env.DEV) {
       response: { ok: true },
     })
   }, 5000)
+
+  // pending request example that never completes
+  addCall({
+    payload: { example: 'pending' },
+    path: '/example/pending-request',
+    type: 'fetch',
+    method: 'GET',
+  })
+
+  // request that stays pending for a while then completes
+  setInterval(() => {
+    const registerResult = addCall({
+      payload: { example: 'slow' },
+      path: '/example/slow-request',
+      type: 'fetch',
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer mock-secret-token-123',
+        'x-trace-id': 'trace_8f2b1c',
+        'x-app-version': '1.0.0',
+      },
+    })
+
+    setTimeout(() => {
+      registerResult({
+        isError: false,
+        status: 200,
+        response: { ok: true, slow: true, unused_field: 'not used' },
+        warnings: [
+          {
+            message: 'Response took longer than 3s',
+            details: { duration: 4000, threshold: 3000, retries: 0 },
+          },
+        ],
+        unusedResponseData: ['unused_field'],
+      })
+    }, 4000)
+  }, 10_000)
 }

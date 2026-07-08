@@ -1,5 +1,10 @@
 import ButtonElement from '@src/components/ButtonElement'
-import { callsStore, lastAddedCallID } from '@src/stores/callsStore'
+import {
+  ApiRequest,
+  TimelineMarker,
+  callsStore,
+  lastAddedCallID,
+} from '@src/stores/callsStore'
 import { setUiStore, uiStore } from '@src/stores/uiStore'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
@@ -40,9 +45,21 @@ const requestItemStyle = css`
     font-size: 13px;
     ${stack()};
 
+    &.warning {
+      color: ${colors.warning.var};
+    }
+
     &.error {
       color: ${colors.error.var};
       font-weight: 600;
+    }
+
+    &.pending {
+      color: ${colors.secondary.var};
+
+      .payload {
+        opacity: 0.7;
+      }
     }
 
     > button {
@@ -67,6 +84,36 @@ const requestItemStyle = css`
         ${ellipsis};
         flex-shrink: 1;
       }
+
+      > .pending-indicator {
+        font-size: 11px;
+        border: 1px solid ${colors.secondary.alpha(0.6)};
+        border-radius: 4px;
+        padding: 0 3px;
+        flex-shrink: 0;
+      }
+    }
+  }
+`
+
+const markerItemStyle = css`
+  &&& {
+    ${inline({ gap: 8 })};
+    padding: 2px 12px;
+    font-size: 12px;
+    color: ${colors.warning.var};
+    font-family: ${fonts.decorative};
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1 1;
+      border-top: 1px dashed ${colors.warning.alpha(0.5)};
+    }
+
+    > span {
+      ${ellipsis};
+      flex-shrink: 1;
     }
   }
 `
@@ -79,6 +126,10 @@ const emptyStateStyle = css`
     padding-top: 0;
   }
 `
+
+type TimelineItem =
+  | { itemType: 'request'; request: ApiRequest; time: number }
+  | { itemType: 'marker'; marker: TimelineMarker; time: number }
 
 export const Timeline = () => {
   const selectedCall = createMemo(() => {
@@ -112,6 +163,25 @@ export const Timeline = () => {
     }
   })
 
+  const timelineItems = createMemo((): TimelineItem[] | null => {
+    const requestsToShow = filteredRequests()
+
+    if (!requestsToShow || requestsToShow.length === 0) return null
+
+    const items: TimelineItem[] = requestsToShow.map((request) => ({
+      itemType: 'request',
+      request,
+      time: request.startTime,
+    }))
+
+    for (const marker of callsStore.markers) {
+      items.push({ itemType: 'marker', marker, time: marker.time })
+    }
+
+    // newest first
+    return items.sort((a, b) => b.time - a.time)
+  })
+
   const selectedRequestId = $(
     uiStore.selectedRequest || filteredRequests()?.[0]?.id,
   )
@@ -122,10 +192,26 @@ export const Timeline = () => {
 
       <div class={itemsContainerStyle}>
         <For
-          each={filteredRequests()}
+          each={timelineItems()}
           fallback={<div class={emptyStateStyle}>no requests found</div>}
         >
-          {(request) => {
+          {(item) => {
+            if (item.itemType === 'marker') {
+              return (
+                <div
+                  class={markerItemStyle}
+                  title={dayjs(item.marker.time).format('HH:mm:ss.SSS')}
+                >
+                  <span>
+                    {item.marker.label} ·{' '}
+                    {dayjs(item.marker.time).format('HH:mm:ss')}
+                  </span>
+                </div>
+              )
+            }
+
+            const request = item.request
+
             const startTime = dayjs(request.startTime)
             const formattedStartTime = startTime.format('HH:mm:ss')
             const relativeStartTime = startTime.fromNow()
@@ -135,7 +221,11 @@ export const Timeline = () => {
             return (
               <div
                 class={requestItemStyle}
-                classList={{ error: request.isError }}
+                classList={{
+                  error: request.isError,
+                  warning: !request.isError && !!request.warnings?.length,
+                  pending: request.status === 'pending',
+                }}
               >
                 <ButtonElement
                   onClick={() => {
@@ -151,6 +241,10 @@ export const Timeline = () => {
                   >
                     {formattedStartTime}
                   </span>
+
+                  {request.status === 'pending' && (
+                    <span class="pending-indicator">pending</span>
+                  )}
 
                   {!!payload && (
                     <>

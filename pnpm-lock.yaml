@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@ls-stack/utils':
+    specifier: ^3.77.0
+    version: 3.77.0
   '@lucasols/utils':
     specifier: ^4.23.2
     version: 4.23.2
@@ -913,6 +916,19 @@ packages:
       '@jridgewell/resolve-uri': 3.1.0
       '@jridgewell/sourcemap-codec': 1.4.14
     dev: true
+
+  /@leeoniya/ufuzzy@1.0.19:
+    resolution: {integrity: sha512-0pikDeYt0IHEUPza5RTCDXc/17S1pTrYnReEMp8Aa6k1ovzw5QdZLwicW8TjljwEZRb6oYag0xmALohrcq/yOQ==}
+    dev: false
+
+  /@ls-stack/utils@3.77.0:
+    resolution: {integrity: sha512-8jswtuz/LRwppLxoVgQJ6OWP3fI2T4KE6fmyVk9TNkRu9rVl6YXzIt+7OlYVc2FVj6a6qKvG8zUFbHD775K2nA==}
+    engines: {node: '>=20.0.0'}
+    dependencies:
+      '@leeoniya/ufuzzy': 1.0.19
+      evtmitter: 1.0.2
+      t-result: 0.6.1
+    dev: false
 
   /@lucasols/eslint-plugin-extended-lint@1.6.0(eslint@8.57.0)(typescript@5.4.5):
     resolution: {integrity: sha512-B4hZJz81NNtOBGiglZASWg32Za3KLVz5KTLdsHWVO1moc/f30HK87jOYpTIkNLQ3TrwCN9lzcwx3twBAU19tLg==}
@@ -2093,6 +2109,11 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
+  /evtmitter@1.0.2:
+    resolution: {integrity: sha512-Y3LObkozuxG0aCdzhMFoxbZyl9osl86mK5B/mIYpRaVsYf7I5bssOFYNBCFnoAgq0A6PkFjxpuojGpZu01w8Nw==}
+    engines: {node: '>=14.6.0'}
+    dev: false
+
   /execa@5.1.1:
     resolution: {integrity: sha512-8uSpZZocAZRBAPIEINJj3Lo9HyGitllczc27Eh5YYojjMFMn8yHMDMaUHE2Jqfq05D/wucwI4JGURyXt1vchyg==}
     engines: {node: '>=10'}
@@ -3097,6 +3118,11 @@ packages:
     dependencies:
       has-flag: 4.0.0
     dev: true
+
+  /t-result@0.6.1:
+    resolution: {integrity: sha512-a1aZsIAFYpjb0J51tZfrS93xxpTp4WY70EhZBCKcHylh/y/tF4uWXIyJUoDQKcg88lDdPlAcwuzE5JAC/4MVZg==}
+    engines: {node: '>=23.0.0'}
+    dev: false
 
   /text-table@0.2.0:
     resolution: {integrity: sha512-N+8UisAXDGk8PFXP4HAzVR9nbfmVJ3zYLAWiTIoqC5v5isinhr+r5uaO8+7r3BMfuNIufIsA7RdpVgacC2cSpw==}

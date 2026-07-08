@@ -4,6 +4,23 @@ export type Icons =
   | 'settings'
   | 'send'
   | 'caret-down'
+  | 'copy'
+  | 'trash'
+  | 'flag'
+  | 'external-link'
+  | 'download'
+  | 'key'
+  | 'chevrons-down-up'
+  | 'chevrons-up-down'
+  | 'layers'
+  | 'chart-bar'
+  | 'clock'
+  | 'x'
+  | 'terminal'
+  | 'play'
+  | 'file-text'
+  | 'alert-triangle'
+  | 'minimize-2'
 
 const test = import.meta.glob('/src/assets/icons/*.svg', {
   eager: true,
