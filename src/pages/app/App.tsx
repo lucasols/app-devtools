@@ -17,7 +17,12 @@ import { StatsPage } from '@src/pages/stats/StatsPage'
 import { TimelineViewPage } from '@src/pages/timeline/TimelineViewPage'
 import { clearHistory } from '@src/stores/callsStore'
 import { clearLogs } from '@src/stores/logsStore'
-import { DevtoolsPage, setUiStore, uiStore } from '@src/stores/uiStore'
+import {
+  DevtoolsPage,
+  setUiStore,
+  showSensitiveValues,
+  uiStore,
+} from '@src/stores/uiStore'
 import { globalStyle } from '@src/style/globalStyle'
 import { centerContent } from '@src/style/helpers/centerContent'
 import { fillContainer } from '@src/style/helpers/fillContainer'
@@ -95,6 +100,11 @@ const containerStyle = css`
             color: ${colors.error.var};
           }
         }
+
+        &.toggle-on,
+        &.toggle-on:hover {
+          color: ${colors.secondary.var};
+        }
       }
     }
   }
@@ -162,6 +172,20 @@ export const App = (props: { standalone?: boolean }) => {
           </For>
 
           <div class="nav-actions">
+            <ButtonElement
+              classList={{ 'toggle-on': showSensitiveValues.value }}
+              title={
+                showSensitiveValues.value
+                  ? 'Hide sensitive values'
+                  : 'Show sensitive values'
+              }
+              onClick={() => {
+                showSensitiveValues.value = !showSensitiveValues.value
+              }}
+            >
+              <Icon name={showSensitiveValues.value ? 'eye-off' : 'eye'} />
+            </ButtonElement>
+
             <ButtonElement
               title="Add a marker to the timeline"
               onClick={() => {

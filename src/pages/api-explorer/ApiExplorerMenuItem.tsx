@@ -115,7 +115,13 @@ export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
       >
         <ButtonElement
           onClick={() => {
-            setUiStore({ selectedCall: item.id, selectedSubitem: null })
+            setUiStore({
+              selectedCall: item.id,
+              selectedSubitem: null,
+              // pin the last loaded request at click time so the details
+              // don't auto-switch when new requests arrive
+              selectedRequest: getLastLoadedRequestId(item),
+            })
           }}
           class="call-button"
         >
@@ -159,6 +165,7 @@ export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
                 setUiStore({
                   selectedCall: item.id,
                   selectedSubitem: subitem,
+                  selectedRequest: getLastLoadedRequestId(item, subitem),
                 })
               }}
             >
@@ -169,6 +176,22 @@ export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
       </Show>
     </div>
   )
+}
+
+/**
+ * id of the last completed request of the call (falling back to the last
+ * request if all are pending), optionally filtered by subitem alias
+ */
+function getLastLoadedRequestId(call: ApiCall, alias?: string): string | null {
+  const requests = alias
+    ? call.requests.filter((request) => request.alias === alias)
+    : call.requests
+
+  const lastLoaded =
+    requests.findLast((request) => request.status !== 'pending') ||
+    requests.at(-1)
+
+  return lastLoaded?.id ?? null
 }
 
 function getTypeIcon(

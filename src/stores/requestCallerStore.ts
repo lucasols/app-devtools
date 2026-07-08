@@ -32,6 +32,19 @@ type CallHistoryEntry = {
   payloadText: string
 }
 
+export type CallerResultEntry = {
+  id: number
+  path: string
+  method: string
+  payloadText: string
+  startTime: number
+  response: unknown
+  status: number | undefined
+  isError: boolean
+  duration: number
+  error: string | null
+}
+
 type State = {
   callers: RequestCaller[]
   selectedCallerIdx: number
@@ -39,14 +52,77 @@ type State = {
   path: string
   payloadText: string
   isLoading: boolean
-  lastResult: {
-    response: unknown
-    status: number | undefined
-    isError: boolean
-    duration: number
-    error: string | null
-  } | null
+  lastResult: CallerResultEntry | null
   history: CallHistoryEntry[]
+  /** results of past executions, used to show the history of a request */
+  resultsHistory: CallerResultEntry[]
+}
+
+let historyId = 0
+
+const historySessionStorageKey = 'app-devtools-caller-history'
+
+function getPersistedHistory(): CallHistoryEntry[] {
+  try {
+    const stored = window.sessionStorage.getItem(historySessionStorageKey)
+
+    if (!stored) return []
+
+    const parsed: unknown = JSON.parse(stored)
+
+    if (!isArray(parsed)) return []
+
+    const entries: CallHistoryEntry[] = []
+
+    for (const item of parsed) {
+      if (
+        isRecord(item) &&
+        typeof item.path === 'string' &&
+        typeof item.method === 'string' &&
+        typeof item.payloadText === 'string'
+      ) {
+        historyId += 1
+
+        entries.push({
+          id: historyId,
+          path: item.path,
+          method: item.method,
+          payloadText: item.payloadText,
+        })
+      }
+    }
+
+    return entries
+  } catch {
+    return []
+  }
+}
+
+function persistHistory(history: CallHistoryEntry[]) {
+  try {
+    window.sessionStorage.setItem(
+      historySessionStorageKey,
+      JSON.stringify(
+        history
+          .slice(0, 5)
+          .map(({ path, method, payloadText }) => ({
+            path,
+            method,
+            payloadText,
+          })),
+      ),
+    )
+  } catch {
+    // sessionStorage may be unavailable
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isArray(value: unknown): value is unknown[] {
+  return Array.isArray(value)
 }
 
 export const [requestCallerStore, setRequestCallerStore] = createStore<State>({
@@ -57,7 +133,8 @@ export const [requestCallerStore, setRequestCallerStore] = createStore<State>({
   payloadText: '',
   isLoading: false,
   lastResult: null,
-  history: [],
+  history: getPersistedHistory(),
+  resultsHistory: [],
 })
 
 export function setRequestCallers(callers: RequestCaller[]) {

@@ -141,6 +141,86 @@ export function getDisplayHeaders(
   return display
 }
 
+/** true if any header value is masked in the ui by `getDisplayHeaders` */
+export function requestHasMaskedHeaders(request: ApiRequest): boolean {
+  if (!request.headers) return false
+
+  return Object.keys(request.headers).some(
+    (name) => !isVisibleRequestHeader(name),
+  )
+}
+
+/**
+ * true if the header raw value can be shown in the ui (allowed by the
+ * `visibleRequestHeaders` config)
+ */
+export function isVisibleRequestHeader(name: string): boolean {
+  return config.visibleRequestHeaders.some(
+    (allowed) => allowed.toLowerCase() === name.toLowerCase(),
+  )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isArray(value: unknown): value is unknown[] {
+  return Array.isArray(value)
+}
+
+function normalizeSensitiveFieldName(name: string) {
+  return name.toLowerCase().replaceAll('_', '').replaceAll('-', '')
+}
+
+/**
+ * returns the payload safe to show in the ui: values of fields listed in the
+ * `sensitiveDataFields` config (at any nesting level) are replaced by type
+ * descriptions via `removeSensitiveData`
+ */
+export function getDisplayPayload(payload: unknown): {
+  value: unknown
+  hasMaskedFields: boolean
+} {
+  const sensitiveNames = new Set(
+    config.sensitiveDataFields.map(normalizeSensitiveFieldName),
+  )
+
+  if (sensitiveNames.size === 0) {
+    return { value: payload, hasMaskedFields: false }
+  }
+
+  const maskState = { maskedFields: 0 }
+
+  function mask(value: unknown): unknown {
+    if (isArray(value)) {
+      return value.map(mask)
+    }
+
+    if (isRecord(value)) {
+      const masked: Record<string, unknown> = {}
+
+      for (const [key, keyValue] of Object.entries(value)) {
+        if (sensitiveNames.has(normalizeSensitiveFieldName(key))) {
+          maskState.maskedFields++
+          masked[key] = removeSensitiveData(keyValue)
+        } else {
+          masked[key] = mask(keyValue)
+        }
+      }
+
+      return masked
+    }
+
+    return value
+  }
+
+  const value = mask(payload)
+
+  return maskState.maskedFields > 0
+    ? { value, hasMaskedFields: true }
+    : { value: payload, hasMaskedFields: false }
+}
+
 function normalizeHeaders(
   headers: Record<string, string | null | undefined> | undefined,
 ): Record<string, string> | undefined {
@@ -253,11 +333,32 @@ export type Config = {
    * (case-insensitive) show their raw values
    */
   visibleRequestHeaders: string[]
+  /**
+   * payload fields with these names (at any nesting level) have their values
+   * masked in the ui (replaced by type descriptions), matching is
+   * case-insensitive and ignores `_` and `-` (e.g. `apiKey` also matches
+   * `api_key`)
+   */
+  sensitiveDataFields: string[]
 }
+
+const defaultSensitiveDataFields = [
+  'token',
+  'accessToken',
+  'refreshToken',
+  'idToken',
+  'apiKey',
+  'apiSecret',
+  'clientSecret',
+  'password',
+  'secret',
+  'authorization',
+]
 
 let config: Config = {
   callsProcessor: [],
   visibleRequestHeaders: [],
+  sensitiveDataFields: defaultSensitiveDataFields,
 }
 
 export function setConfig(newConfig: Partial<Config>) {
@@ -626,7 +727,11 @@ if (import.meta.env.DEV) {
   // request that stays pending for a while then completes
   setInterval(() => {
     const registerResult = addCall({
-      payload: { example: 'slow' },
+      payload: {
+        example: 'slow',
+        token: 'mock-payload-token-123',
+        auth: { access_token: 'mock-access-token-456' },
+      },
       path: '/example/slow-request',
       type: 'fetch',
       method: 'POST',

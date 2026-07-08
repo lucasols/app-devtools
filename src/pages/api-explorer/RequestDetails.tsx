@@ -7,10 +7,16 @@ import {
   ApiCall,
   callsStore,
   getDisplayHeaders,
+  getDisplayPayload,
   lastAddedCallID,
+  RequestWarning,
 } from '@src/stores/callsStore'
 import { openRequestInCaller, requestCallerStore } from '@src/stores/requestCallerStore'
-import { setUiStore, uiStore } from '@src/stores/uiStore'
+import {
+  setUiStore,
+  showSensitiveValues,
+  uiStore,
+} from '@src/stores/uiStore'
 import { copyToClipboard } from '@src/utils/copyToClipboard'
 import {
   getUnusedResponseDataMap,
@@ -22,7 +28,7 @@ import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
 import { formatNum } from '@src/utils/formatNum'
-import { createMemoRef } from '@utils/solid'
+import { createMemoRef, createSignalRef } from '@utils/solid'
 import dayjs from 'dayjs'
 import { css } from 'solid-styled-components'
 
@@ -59,6 +65,7 @@ const containerStyle = css`
     .tags {
       ${inline({ gap: 8 })};
       margin-top: 8px;
+      padding-right: 10px;
 
       .method {
         color: ${colors.primary.var};
@@ -101,7 +108,7 @@ const containerStyle = css`
         margin-left: auto;
         ${inline({ gap: 8 })};
 
-        > button {
+        button.action-button {
           ${inline({ gap: 4 })};
           font-size: 12px;
           color: ${colors.white.alpha(0.7)};
@@ -153,6 +160,52 @@ const warningsListStyle = css`
         flex: 1 1;
       }
     }
+  }
+`
+
+const curlMenuStyle = css`
+  &&& {
+    position: relative;
+
+    > .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 19;
+    }
+
+    > .menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      z-index: 20;
+      ${stack({ align: 'stretch' })};
+      min-width: 170px;
+      padding: 4px;
+      background: ${colors.bgSecondary.var};
+      border: 1px solid ${colors.white.alpha(0.1)};
+      border-radius: 4px;
+
+      > button {
+        text-align: left;
+        font-size: 12px;
+        white-space: nowrap;
+        color: ${colors.white.alpha(0.8)};
+        padding: 6px 8px;
+        border-radius: 4px;
+
+        &:hover {
+          color: ${colors.white.var};
+          background: ${colors.white.alpha(0.08)};
+        }
+      }
+    }
+  }
+`
+
+// makes the json viewer search toolbar stretch flush to the section edges
+const fullTabSectionStyle = css`
+  &&& {
+    --json-toolbar-bleed: 10px;
   }
 `
 
@@ -214,7 +267,7 @@ export const RequestDetails = () => {
     return (
       <ButtonElement
         classList={{
-          selected: selectedTab === tabId,
+          selected: activeTab.value === tabId,
         }}
         onClick={() => {
           setUiStore('selectedTab', tabId)
@@ -226,10 +279,40 @@ export const RequestDetails = () => {
   }
 
   const displayHeaders = createMemoRef(() => {
-    return selectedRequest.value
-      ? getDisplayHeaders(selectedRequest.value)
-      : null
+    const request = selectedRequest.value
+
+    if (!request) return null
+
+    if (showSensitiveValues.value) return request.headers ?? null
+
+    return getDisplayHeaders(request)
   })
+
+  const displayPayload = createMemoRef(() => {
+    const request = selectedRequest.value
+
+    if (!request?.payload) return null
+
+    return getDisplayPayload(request.payload)
+  })
+
+  const payloadToShow = createMemoRef(() => {
+    return showSensitiveValues.value
+      ? selectedRequest.value?.payload
+      : displayPayload.value?.value
+  })
+
+  const curlMenuIsOpen = createSignalRef(false)
+
+  function copyAsCurl(maskSensitiveData: boolean) {
+    const request = selectedRequest.value
+
+    if (request) {
+      void copyToClipboard(getRequestAsCurl(request, { maskSensitiveData }))
+    }
+
+    curlMenuIsOpen.value = false
+  }
 
   function formatBytes(sizeInBytes: number) {
     return formatNum(sizeInBytes, {
@@ -245,6 +328,65 @@ export const RequestDetails = () => {
 
     return formatBytes(JSON.stringify(selectedRequest.value.response).length)
   })
+
+  function copyRequestAsJson() {
+    const request = selectedRequest.value
+
+    if (!request) return
+
+    void copyToClipboard({
+      call: request.callName,
+      path: request.path,
+      method: request.method,
+      type: request.type,
+      subType: request.subType,
+      alias: request.alias,
+      status: request.status,
+      code: request.code,
+      isError: request.isError,
+      startTime: request.startTime,
+      startTimeISO: new Date(request.startTime).toISOString(),
+      duration: request.duration,
+      tags: request.tags,
+      warnings: request.warnings,
+      // sensitive header and payload values are masked like in the ui, unless
+      // the "show sensitive values" toggle is on
+      payload: showSensitiveValues.value
+        ? request.payload
+        : getDisplayPayload(request.payload).value,
+      searchParams: request.searchParams,
+      headers:
+        (showSensitiveValues.value
+          ? request.headers
+          : getDisplayHeaders(request)) ?? undefined,
+      response: request.response,
+      unusedResponseData: request.unusedResponseData,
+      metadata: request.metadata,
+    })
+  }
+
+  function warningsList(warnings: RequestWarning[]) {
+    return (
+      <div class={warningsListStyle}>
+        <For each={warnings}>
+          {(warning) => (
+            <div class="warning-item">
+              <Icon name="alert-triangle" />
+              <div class="warning-content">
+                <span>{warning.message}</span>
+                {warning.details !== undefined && (
+                  <JsonViewer
+                    value={warning.details}
+                    compact
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </For>
+      </div>
+    )
+  }
 
   const unusedResponseData = createMemoRef(() => {
     const request = selectedRequest.value
@@ -275,6 +417,27 @@ export const RequestDetails = () => {
       responseBytes > 0 ? Math.round((unusedBytes / responseBytes) * 100) : 0
 
     return `${formatBytes(unusedBytes)} (${percent}% of response)`
+  })
+
+  // falls back to the summary tab when the selected tab is not available for
+  // the current request (e.g. a request without headers or warnings)
+  const activeTab = createMemoRef(() => {
+    const request = selectedRequest.value
+
+    if (!request) return 'summary'
+
+    if (selectedTab === 'payload' && !request.payload) return 'summary'
+    if (selectedTab === 'urlParams' && !request.searchParams) return 'summary'
+    if (selectedTab === 'unusedData' && !unusedResponseData.value) {
+      return 'summary'
+    }
+    if (selectedTab === 'warnings' && !request.warnings?.length) {
+      return 'summary'
+    }
+    if (selectedTab === 'metadata' && !request.metadata) return 'summary'
+    if (selectedTab === 'headers' && !displayHeaders.value) return 'summary'
+
+    return selectedTab
   })
 
   return (
@@ -338,25 +501,62 @@ export const RequestDetails = () => {
             </For>
 
             <div class="actions">
-              {selectedRequest.value.type !== 'ws' && (
-                <ButtonElement
-                  title="Copy request as cURL"
-                  onClick={() => {
-                    const request = selectedRequest.value
+              <ButtonElement
+                class="action-button"
+                title="Copy the full request info as JSON"
+                onClick={copyRequestAsJson}
+              >
+                <Icon name="copy" />
+                JSON
+              </ButtonElement>
 
-                    if (request) {
-                      void copyToClipboard(getRequestAsCurl(request))
-                    }
-                  }}
-                >
-                  <Icon name="terminal" />
-                  cURL
-                </ButtonElement>
+              {selectedRequest.value.type !== 'ws' && (
+                <div class={curlMenuStyle}>
+                  <ButtonElement
+                    class="action-button"
+                    title="Copy request as cURL"
+                    onClick={() => {
+                      curlMenuIsOpen.value = !curlMenuIsOpen.value
+                    }}
+                  >
+                    <Icon name="terminal" />
+                    cURL
+                    <Icon name="caret-down" />
+                  </ButtonElement>
+
+                  {curlMenuIsOpen.value && (
+                    <>
+                      <div
+                        class="backdrop"
+                        onClick={() => {
+                          curlMenuIsOpen.value = false
+                        }}
+                      />
+
+                      <div class="menu">
+                        <ButtonElement
+                          title="Sensitive header values and payload fields are masked"
+                          onClick={() => copyAsCurl(true)}
+                        >
+                          Copy
+                        </ButtonElement>
+
+                        <ButtonElement
+                          title="Includes the raw values of sensitive headers and payload fields"
+                          onClick={() => copyAsCurl(false)}
+                        >
+                          Copy with token
+                        </ButtonElement>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
 
               {selectedRequest.value.type !== 'ws' &&
                 requestCallerStore.callers.length > 0 && (
                   <ButtonElement
+                    class="action-button"
                     title="Modify and resend this request in the caller tab"
                     onClick={() => {
                       const request = selectedRequest.value
@@ -379,38 +579,27 @@ export const RequestDetails = () => {
             {!!selectedRequest.value.searchParams &&
               getTab('urlParams', 'URL Search Params')}
             {getTab('response', 'Response')}
+            {!!unusedResponseData.value && getTab('unusedData', 'Unused Data')}
+            {!!selectedRequest.value.warnings?.length &&
+              getTab('warnings', 'Warnings')}
+            {!!selectedRequest.value.metadata &&
+              getTab('metadata', 'Metadata')}
+            {!!displayHeaders.value && getTab('headers', 'Headers')}
           </div>
 
           <div class="details">
             <Switch>
-              <Match when={selectedTab === 'summary'}>
+              <Match when={activeTab.value === 'summary'}>
                 {!!selectedRequest.value.warnings?.length && (
                   <Section title="Warnings">
-                    <div class={warningsListStyle}>
-                      <For each={selectedRequest.value.warnings}>
-                        {(warning) => (
-                          <div class="warning-item">
-                            <Icon name="alert-triangle" />
-                            <div class="warning-content">
-                              <span>{warning.message}</span>
-                              {warning.details !== undefined && (
-                                <JsonViewer
-                                  value={warning.details}
-                                  compact
-                                />
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </For>
-                    </div>
+                    {warningsList(selectedRequest.value.warnings)}
                   </Section>
                 )}
 
                 {!!selectedRequest.value.payload && (
                   <Section title="Payload">
                     <JsonViewer
-                      value={selectedRequest.value.payload}
+                      value={payloadToShow.value}
                       compact
                     />
                   </Section>
@@ -519,17 +708,23 @@ export const RequestDetails = () => {
                 )}
               </Match>
 
-              <Match when={selectedTab === 'payload'}>
-                <Section title={null}>
+              <Match when={activeTab.value === 'payload'}>
+                <Section
+                  title={null}
+                  class={fullTabSectionStyle}
+                >
                   <JsonViewer
-                    value={selectedRequest.value.payload}
+                    value={payloadToShow.value}
                     search
                   />
                 </Section>
               </Match>
 
-              <Match when={selectedTab === 'response'}>
-                <Section title={null}>
+              <Match when={activeTab.value === 'response'}>
+                <Section
+                  title={null}
+                  class={fullTabSectionStyle}
+                >
                   <JsonViewer
                     value={selectedRequest.value.response}
                     search
@@ -537,10 +732,58 @@ export const RequestDetails = () => {
                 </Section>
               </Match>
 
-              <Match when={selectedTab === 'urlParams'}>
-                <Section title={null}>
+              <Match when={activeTab.value === 'urlParams'}>
+                <Section
+                  title={null}
+                  class={fullTabSectionStyle}
+                >
                   <JsonViewer
                     value={selectedRequest.value.searchParams}
+                    search
+                  />
+                </Section>
+              </Match>
+
+              <Match when={activeTab.value === 'unusedData'}>
+                <Section
+                  title={null}
+                  class={fullTabSectionStyle}
+                >
+                  <JsonViewer
+                    value={unusedResponseData.value}
+                    search
+                  />
+                </Section>
+              </Match>
+
+              <Match when={activeTab.value === 'warnings'}>
+                <Section
+                  title={null}
+                  class={fullTabSectionStyle}
+                >
+                  {warningsList(selectedRequest.value.warnings || [])}
+                </Section>
+              </Match>
+
+              <Match when={activeTab.value === 'metadata'}>
+                <Section
+                  title={null}
+                  class={fullTabSectionStyle}
+                >
+                  <JsonViewer
+                    value={selectedRequest.value.metadata}
+                    search
+                  />
+                </Section>
+              </Match>
+
+              <Match when={activeTab.value === 'headers'}>
+                <Section
+                  title={null}
+                  class={fullTabSectionStyle}
+                >
+                  <JsonViewer
+                    value={displayHeaders.value}
                     search
                   />
                 </Section>

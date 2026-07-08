@@ -31,7 +31,13 @@ const toolbarStyle = css`
     top: 0;
     z-index: 2;
     background: ${colors.bgPrimary.var};
+    /* set --json-toolbar-bleed to the container padding to make the toolbar
+       stretch flush to the container edges */
+    margin: calc(-1 * var(--json-toolbar-bleed, 0px));
+    margin-bottom: 0;
+    padding: var(--json-toolbar-bleed, 0px);
     padding-bottom: 4px;
+    border-radius: 4px 4px 0 0;
 
     > label {
       ${inline({ gap: 6 })};
@@ -65,6 +71,8 @@ const toolbarStyle = css`
       border-radius: 4px;
       color: ${colors.white.alpha(0.6)};
       --icon-size: 14px;
+      font-size: 12px;
+      white-space: nowrap;
       ${transition()};
 
       &:hover {
@@ -75,21 +83,6 @@ const toolbarStyle = css`
       &.active {
         color: ${colors.secondary.var};
         background: ${colors.secondary.alpha(0.16)};
-      }
-    }
-
-    > .expand-level-input {
-      width: 34px;
-      background: ${colors.white.alpha(0.05)};
-      border: none;
-      border-radius: 4px;
-      color: ${colors.white.var};
-      font-size: 12px;
-      padding: 4px;
-      text-align: center;
-
-      &:focus {
-        outline: 1px solid ${colors.secondary.alpha(0.5)};
       }
     }
   }
@@ -268,6 +261,8 @@ type JsonViewerProps = {
   compact?: boolean
   /** shows the search/filter toolbar */
   search?: boolean
+  /** extra buttons rendered at the end of the search toolbar */
+  toolbarActions?: JSXElement
 }
 
 const CopyValueButton = (props: { value: unknown }) => (
@@ -626,22 +621,27 @@ export const JsonViewer = (props: JsonViewerProps) => {
             <Icon name="chevrons-up-down" />
           </ButtonElement>
 
-          <input
-            class="expand-level-input"
-            type="number"
-            min="1"
-            max="20"
-            placeholder="lvl"
+          <ButtonElement
+            class="toolbar-button"
+            classList={{ active: typeof expandDepth === 'number' }}
             title="Expand up to a level"
-            value={typeof expandDepth === 'number' ? expandDepth : ''}
-            onChange={(e) => {
-              const level = Number.parseInt(e.currentTarget.value, 10)
+            onClick={() => {
+              const answer = window.prompt(
+                'Expand up to level (1-20)',
+                String(typeof expandDepth === 'number' ? expandDepth : 2),
+              )
+
+              if (!answer) return
+
+              const level = Number.parseInt(answer, 10)
 
               if (Number.isNaN(level)) return
 
               setExpandDepth(Math.max(1, Math.min(level, 20)))
             }}
-          />
+          >
+            {typeof expandDepth === 'number' ? `lvl ${expandDepth}` : 'lvl'}
+          </ButtonElement>
 
           <ButtonElement
             class="toolbar-button"
@@ -652,6 +652,8 @@ export const JsonViewer = (props: JsonViewerProps) => {
           >
             <Icon name="copy" />
           </ButtonElement>
+
+          {props.toolbarActions}
         </div>
       )}
 

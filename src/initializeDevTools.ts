@@ -12,6 +12,7 @@ export function initializeDevTools({
   shortcut,
   requestCallers,
   visibleRequestHeaders,
+  sensitiveDataFields,
 }: {
   callsProcessor?: Config['callsProcessor']
   /** use $mod for CMD or Ctrl */
@@ -27,6 +28,13 @@ export function initializeDevTools({
    * (case-insensitive) show their raw values
    */
   visibleRequestHeaders?: string[]
+  /**
+   * payload fields with these names (at any nesting level) have their values
+   * masked in the ui (replaced by type descriptions), matching is
+   * case-insensitive and ignores `_` and `-`, overrides the default list
+   * (token, password, secret, apiKey, etc)
+   */
+  sensitiveDataFields?: string[]
 }) {
   tinykeys(window, {
     [shortcut]: (e) => {
@@ -48,6 +56,7 @@ export function initializeDevTools({
   setConfig({
     ...(callsProcessor ? { callsProcessor } : {}),
     ...(visibleRequestHeaders ? { visibleRequestHeaders } : {}),
+    ...(sensitiveDataFields ? { sensitiveDataFields } : {}),
   })
 
   if (requestCallers) {

@@ -21,6 +21,8 @@ export type Icons =
   | 'file-text'
   | 'alert-triangle'
   | 'minimize-2'
+  | 'eye'
+  | 'eye-off'
 
 const test = import.meta.glob('/src/assets/icons/*.svg', {
   eager: true,
