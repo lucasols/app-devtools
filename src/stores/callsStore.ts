@@ -688,7 +688,6 @@ export function addCall(request: {
 
         if (unusedResponseData) {
           const normalizedUnusedResponseData = normalizeUnusedResponseData(
-            response,
             unusedResponseData,
           )
 
@@ -759,7 +758,20 @@ if (import.meta.env.DEV) {
               ]
             : undefined,
           unusedResponseData: call.request.path.includes('list')
-            ? ['data[*].internal_meta', 'data[*].legacy_id', 'debug_info']
+            ? [
+                {
+                  field: 'data[*].internal_meta',
+                  data: [{ source: 'mocked unused metadata' }],
+                },
+                {
+                  field: 'data[*].legacy_id',
+                  data: ['mock-legacy-id'],
+                },
+                {
+                  field: 'debug_info',
+                  data: { traceId: 'mock-debug-info' },
+                },
+              ]
             : undefined,
         })
       })
@@ -834,7 +846,12 @@ if (import.meta.env.DEV) {
             details: { duration: 4000, threshold: 3000, retries: 0 },
           },
         ],
-        unusedResponseData: ['unused_field'],
+        unusedResponseData: [
+          {
+            field: 'unused_field',
+            data: 'not used',
+          },
+        ],
       })
     }, 4000)
   }, 10_000)
