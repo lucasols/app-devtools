@@ -229,9 +229,12 @@ export const StatsPage = () => {
     let pending = 0
     let totalDuration = 0
     let completed = 0
+    let totalSize = 0
 
     for (const { request } of requests) {
       if (request.warnings?.length) warnings++
+
+      totalSize += getResponseSize(request)
 
       if (request.status === 'pending') pending++
       else {
@@ -248,6 +251,7 @@ export const StatsPage = () => {
       warnings,
       pending,
       avgDuration: completed === 0 ? 0 : totalDuration / completed,
+      totalSize,
     }
   })
 
@@ -448,6 +452,10 @@ export const StatsPage = () => {
             {formatNum(overview().avgDuration, { maximumFractionDigits: 0 })}{' '}
             ms
           </span>
+        </div>
+        <div>
+          <span class="label">data used</span>
+          <span class="value">{formatBytes(overview().totalSize)}</span>
         </div>
       </div>
 
