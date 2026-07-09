@@ -393,25 +393,20 @@ export const RequestDetails = () => {
 
     if (!request?.unusedResponseData?.length) return null
 
-    return getUnusedResponseDataMap(
-      request.response,
-      request.unusedResponseData,
-    )
+    return getUnusedResponseDataMap(request.unusedResponseData)
   })
 
   const unusedResponseDataSize = createMemoRef(() => {
     const request = selectedRequest.value
 
-    if (!request?.unusedResponseData?.length || !request.response) return false
+    if (!request?.unusedResponseData?.length) return false
 
-    const unusedBytes = getUnusedResponseDataSize(
-      request.response,
-      request.unusedResponseData,
-    )
+    const unusedBytes = getUnusedResponseDataSize(request.unusedResponseData)
 
     if (unusedBytes === 0) return false
 
-    const responseBytes = JSON.stringify(request.response).length
+    const serializedResponse = JSON.stringify(request.response)
+    const responseBytes = serializedResponse ? serializedResponse.length : 0
 
     const percent =
       responseBytes > 0 ? Math.round((unusedBytes / responseBytes) * 100) : 0

@@ -384,7 +384,6 @@ export const StatsPage = () => {
       }
 
       const unusedBytes = getUnusedResponseDataSize(
-        item.request.response,
         item.request.unusedResponseData,
       )
 
@@ -395,13 +394,15 @@ export const StatsPage = () => {
         existing.item = item
         existing.unusedBytes += unusedBytes
 
-        for (const field of item.request.unusedResponseData) {
-          existing.fields.add(field)
+        for (const unused of item.request.unusedResponseData) {
+          existing.fields.add(unused.field)
         }
       } else {
         byCall.set(item.callID, {
           item,
-          fields: new Set(item.request.unusedResponseData),
+          fields: new Set(
+            item.request.unusedResponseData.map((unused) => unused.field),
+          ),
           requestsCount: 1,
           unusedBytes,
         })

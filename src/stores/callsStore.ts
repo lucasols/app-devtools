@@ -5,10 +5,20 @@ import { assertIsNotNullish } from '@utils/assertions'
 import { createSignalRef } from '@utils/solid'
 import { tryExpression } from '@utils/tryExpression'
 import { matchURLPattern } from '@utils/urlPattern'
+import {
+  normalizeUnusedResponseData,
+  type UnusedResponseData,
+  type UnusedResponseDataInput,
+} from '@src/utils/getUnusedResponseData'
 import { klona } from 'klona/json'
 import { nanoid } from 'nanoid'
 import { batch } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
+
+export type {
+  UnusedResponseData,
+  UnusedResponseDataInput,
+} from '@src/utils/getUnusedResponseData'
 
 export type RequestSubTypes =
   | 'delete'
@@ -55,7 +65,7 @@ export type ApiRequest = {
    * response fields that were not used by the app, an optimization
    * opportunity shown in the stats tab
    */
-  unusedResponseData: string[] | undefined
+  unusedResponseData: UnusedResponseData[] | undefined
   /**
    * approximate stored size (json string length of payload/response/metadata
    * plus a fixed overhead), used by the size-based eviction budget
@@ -452,7 +462,7 @@ export type RegisterCallResult = (props: {
    * used by the app, e.g. fields not declared in the response schema, shown
    * in the stats tab as an optimization opportunity
    */
-  unusedResponseData?: (string | null | undefined)[] | undefined
+  unusedResponseData?: UnusedResponseDataInput[] | undefined
 }) => void
 
 export function addWebsocketEvent({
@@ -646,7 +656,7 @@ export function addCall(request: {
     metadata?: unknown
     tags?: (string | null | undefined)[]
     warnings?: RequestWarningInput[]
-    unusedResponseData?: (string | null | undefined)[]
+    unusedResponseData?: UnusedResponseDataInput[]
   }) => {
     const duration = request.duration || Date.now() - startTime
 
@@ -677,12 +687,14 @@ export function addCall(request: {
         )
 
         if (unusedResponseData) {
-          const unusedFields = filterNonNullableElements(
-            concatNonNullable(unusedResponseData, []),
+          const normalizedUnusedResponseData = normalizeUnusedResponseData(
+            response,
+            unusedResponseData,
           )
 
-          pendingRequest.unusedResponseData =
-            unusedFields.length > 0 ? unusedFields : undefined
+          pendingRequest.unusedResponseData = normalizedUnusedResponseData
+            ? klona(normalizedUnusedResponseData)
+            : undefined
         }
 
         evictOldRequestsIfNeeded(draft)
