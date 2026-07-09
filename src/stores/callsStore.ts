@@ -761,15 +761,12 @@ if (import.meta.env.DEV) {
             ? [
                 {
                   field: 'data[*].internal_meta',
-                  data: [{ source: 'mocked unused metadata' }],
                 },
                 {
                   field: 'data[*].legacy_id',
-                  data: ['mock-legacy-id'],
                 },
                 {
                   field: 'debug_info',
-                  data: { traceId: 'mock-debug-info' },
                 },
               ]
             : undefined,

@@ -2,7 +2,7 @@ import { tryExpression } from '@utils/tryExpression'
 
 export type UnusedResponseData = {
   field: string
-  data: unknown
+  data?: unknown
 }
 
 export type UnusedResponseDataInput = UnusedResponseData | null | undefined
