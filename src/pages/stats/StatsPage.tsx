@@ -238,8 +238,12 @@ export const StatsPage = () => {
 
       if (request.status === 'pending') pending++
       else {
-        completed++
-        totalDuration += request.duration
+        // requests recorded after completion (lazy initialization) have no
+        // timing info, so they are excluded from duration stats
+        if (request.duration > 0) {
+          completed++
+          totalDuration += request.duration
+        }
 
         if (request.isError) errors++
       }
@@ -257,7 +261,10 @@ export const StatsPage = () => {
 
   const slowestRequests = createMemo(() => {
     return apiRequests
-      .filter((item) => item.request.status !== 'pending')
+      .filter(
+        (item) =>
+          item.request.status !== 'pending' && item.request.duration > 0,
+      )
       .sort((a, b) => b.request.duration - a.request.duration)
       .slice(0, 10)
   })
