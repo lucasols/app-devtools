@@ -496,6 +496,12 @@ export function addWebsocketEvent({
 export function addCall(request: {
   payload: unknown
   path: string
+  /**
+   * stable route identifier used to group calls when no calls processor
+   * matches; a suffix after `|` distinguishes logical calls while the part
+   * before it is used as the route pattern for path parameter extraction
+   */
+  pathId?: string
   type: RequestTypes
   subType?: RequestSubTypes
   method?: string
@@ -561,6 +567,14 @@ export function addCall(request: {
         }
       })
 
+      if (!relatedConfig && request.pathId) {
+        const pathPattern = request.pathId.split('|')[0]
+
+        if (pathPattern) {
+          pathParams = matchURLPattern(pathURL.pathname, pathPattern)
+        }
+      }
+
       const normalizedCallId =
         relatedConfig?.callID?.({
           url: pathURL,
@@ -568,7 +582,10 @@ export function addCall(request: {
           subType: request.subType,
         }) ||
         (typeof relatedConfig?.match === 'string' &&
-          `${request.type}${request.subType || ''}${relatedConfig.match}`)
+          `${request.type}${request.subType || ''}${relatedConfig.match}`) ||
+        (!relatedConfig &&
+          request.pathId &&
+          `${request.type}${request.subType || ''}${request.pathId}`)
 
       const callID = btoa(
         normalizedCallId ||
@@ -586,6 +603,7 @@ export function addCall(request: {
           name: (
             callNameNormalizer ||
             (typeof relatedConfig?.match === 'string' && relatedConfig.match) ||
+            (!relatedConfig && request.pathId) ||
             pathURL.pathname
           ).replace(/^\//, ''),
           path: pathURL.pathname.replace(/^\//, ''),
