@@ -1,6 +1,7 @@
 import { openAddMarkerDialog } from '@src/components/AddMarkerDialog'
 import ButtonElement from '@src/components/ButtonElement'
 import Icon from '@src/components/Icon'
+import { openExportDialog } from '@src/components/ExportHistoryDialog'
 import { getTypeTag, typeTagStyle } from '@src/pages/api-explorer/typeTag'
 import {
   ApiRequest,
@@ -715,6 +716,13 @@ export const TimelineViewPage = () => {
           <Show when={selection}>
             {(sel) => (
               <div class={selectionActionsStyle}>
+                <ButtonElement
+                  title="Export requests in the selected time range"
+                  onClick={() => openExportDialog(sel())}
+                >
+                  export selected range
+                </ButtonElement>
+
                 <ButtonElement
                   class="danger"
                   title="Remove all requests that ended before the selection"

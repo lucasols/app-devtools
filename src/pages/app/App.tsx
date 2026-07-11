@@ -7,6 +7,7 @@ import ButtonElement from '@src/components/ButtonElement'
 import {
   ExportHistoryDialog,
   exportDialogIsOpen,
+  openExportDialog,
 } from '@src/components/ExportHistoryDialog'
 import Icon from '@src/components/Icon'
 import { Toast } from '@src/components/Toast'
@@ -199,7 +200,7 @@ export const App = (props: { standalone?: boolean }) => {
             <ButtonElement
               title="Export history"
               onClick={() => {
-                exportDialogIsOpen.value = true
+                openExportDialog()
               }}
             >
               <Icon name="download" />

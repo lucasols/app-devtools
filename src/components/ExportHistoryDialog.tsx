@@ -12,8 +12,18 @@ import { colors, fonts, shadows } from '@src/style/theme'
 import { createSignalRef } from '@utils/solid'
 import { createStore } from 'solid-js/store'
 import { css } from 'solid-styled-components'
+import { getTypeTag, typeTagStyle } from '@src/pages/api-explorer/typeTag'
 
 export const exportDialogIsOpen = createSignalRef(false)
+export type ExportTimeRange = { start: number; end: number }
+export const exportDialogTimeRange = createSignalRef<ExportTimeRange | null>(
+  null,
+)
+
+export function openExportDialog(timeRange: ExportTimeRange | null = null) {
+  exportDialogTimeRange.value = timeRange
+  exportDialogIsOpen.value = true
+}
 
 const overlayStyle = css`
   &&& {
@@ -92,6 +102,24 @@ const dialogStyle = css`
       }
     }
 
+    > .type-filter {
+      ${inline({ gap: 6 })};
+
+      button {
+        font-size: 12px;
+        opacity: 0.5;
+        border: 1px solid ${colors.white.alpha(0.12)};
+        border-radius: 4px;
+        padding: 3px 8px;
+
+        &.active {
+          opacity: 1;
+          color: ${colors.primary.var};
+          border-color: ${colors.primary.alpha(0.5)};
+        }
+      }
+    }
+
     > .options {
       ${stack({ align: 'left' })};
       gap: 6px;
@@ -142,8 +170,35 @@ export const ExportHistoryDialog = () => {
   let includeResponses = $signal(true)
   let includeLogs = $signal(true)
   let privacyMode = $signal(false)
+  let typeFilter = $signal<'all' | 'api' | 'ws'>('all')
 
-  const callsEntries = $(Object.entries(callsStore.calls))
+  const timeRange = exportDialogTimeRange.value
+  const allCallsEntries = $(
+    Object.entries(callsStore.calls)
+      .map(([callID, call]) => [
+        callID,
+        {
+          ...call,
+          requests: timeRange
+            ? call.requests.filter(
+                (request) =>
+                  request.startTime <= timeRange.end &&
+                  (request.status === 'pending'
+                    ? Infinity
+                    : request.startTime + request.duration) >= timeRange.start,
+              )
+            : call.requests,
+        },
+      ] as const)
+      .filter(([, call]) => call.requests.length > 0),
+  )
+  const callsEntries = $(
+    allCallsEntries.filter(([, call]) => {
+      if (typeFilter === 'api') return call.type !== 'ws'
+      if (typeFilter === 'ws') return call.type === 'ws'
+      return true
+    }),
+  )
 
   function processValue(value: unknown): unknown {
     return privacyMode ? removeSensitiveData(value) : value
@@ -152,11 +207,17 @@ export const ExportHistoryDialog = () => {
   function buildExport(): unknown {
     return {
       exportedAt: new Date().toISOString(),
-      markers: callsStore.markers.map((marker) => ({
+      markers: callsStore.markers
+        .filter(
+          (marker) =>
+            !timeRange ||
+            (marker.time >= timeRange.start && marker.time <= timeRange.end),
+        )
+        .map((marker) => ({
         label: marker.label,
         time: marker.time,
         timeISO: new Date(marker.time).toISOString(),
-      })),
+        })),
       calls: callsEntries
         .filter(([callID]) => selectedCalls[callID])
         .map(([, call]) => ({
@@ -199,9 +260,13 @@ export const ExportHistoryDialog = () => {
         })),
       ...(includeLogs && logsStore.logs.length > 0
         ? {
-            logs: logsStore.logs.map((log) =>
-              getLogExportEntry(log, processValue),
-            ),
+            logs: logsStore.logs
+              .filter(
+                (log) =>
+                  !timeRange ||
+                  (log.time >= timeRange.start && log.time <= timeRange.end),
+              )
+              .map((log) => getLogExportEntry(log, processValue)),
           }
         : {}),
     }
@@ -231,6 +296,21 @@ export const ExportHistoryDialog = () => {
         ) : (
           <>
             <h2>Calls to include</h2>
+
+            <div class="type-filter">
+              <For each={['all', 'api', 'ws'] as const}>
+                {(filter) => (
+                  <ButtonElement
+                    classList={{ active: typeFilter === filter }}
+                    onClick={() => {
+                      typeFilter = filter
+                    }}
+                  >
+                    {filter === 'ws' ? 'WebSocket' : filter.toUpperCase()}
+                  </ButtonElement>
+                )}
+              </For>
+            </div>
 
             <div class="select-buttons">
               <ButtonElement
@@ -264,6 +344,22 @@ export const ExportHistoryDialog = () => {
                         setSelectedCalls(callID, e.currentTarget.checked)
                       }}
                     />
+                    {(() => {
+                      const typeTag = getTypeTag({
+                        type: call.type,
+                        subType: call.subType,
+                        method: call.requests.at(-1)?.method,
+                      })
+
+                      return (
+                        <div
+                          class={`${typeTagStyle} ${typeTag.class}`}
+                          title={typeTag.description}
+                        >
+                          {typeTag.label}
+                        </div>
+                      )
+                    })()}
                     <span>{call.name}</span>
                     <span class="count">
                       {call.requests.length} request
