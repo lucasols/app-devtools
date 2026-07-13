@@ -414,6 +414,10 @@ export const RequestDetails = () => {
     return `${formatBytes(unusedBytes)} (${percent}% of response)`
   })
 
+  const requestWarnings = createMemoRef(
+    () => selectedRequest.value?.warnings ?? [],
+  )
+
   // falls back to the summary tab when the selected tab is not available for
   // the current request (e.g. a request without headers or warnings)
   const activeTab = createMemoRef(() => {
@@ -478,12 +482,12 @@ export const RequestDetails = () => {
               <div class="tag error">Has Error</div>
             )}
 
-            {!!selectedRequest.value.warnings?.length && (
+            {!!requestWarnings.value.length && (
               <div class="tag warning">
                 <Icon name="alert-triangle" />
-                {selectedRequest.value.warnings.length === 1
+                {requestWarnings.value.length === 1
                   ? 'Has Warning'
-                  : `${selectedRequest.value.warnings.length} Warnings`}
+                  : `${requestWarnings.value.length} Warnings`}
               </div>
             )}
 
@@ -575,7 +579,7 @@ export const RequestDetails = () => {
               getTab('urlParams', 'URL Search Params')}
             {getTab('response', 'Response')}
             {!!unusedResponseData.value && getTab('unusedData', 'Unused Data')}
-            {!!selectedRequest.value.warnings?.length &&
+            {!!requestWarnings.value.length &&
               getTab('warnings', 'Warnings')}
             {!!selectedRequest.value.metadata &&
               getTab('metadata', 'Metadata')}
@@ -585,9 +589,9 @@ export const RequestDetails = () => {
           <div class="details">
             <Switch>
               <Match when={activeTab.value === 'summary'}>
-                {!!selectedRequest.value.warnings?.length && (
+                {!!requestWarnings.value.length && (
                   <Section title="Warnings">
-                    {warningsList(selectedRequest.value.warnings)}
+                    {warningsList(requestWarnings.value)}
                   </Section>
                 )}
 
@@ -756,7 +760,7 @@ export const RequestDetails = () => {
                   title={null}
                   class={fullTabSectionStyle}
                 >
-                  {warningsList(selectedRequest.value.warnings || [])}
+                  {warningsList(requestWarnings.value)}
                 </Section>
               </Match>
 
