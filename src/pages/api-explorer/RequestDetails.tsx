@@ -160,8 +160,19 @@ const warningsListStyle = css`
         flex: 1 1;
       }
     }
+
+    > .show-all {
+      font-size: 12px;
+      color: ${colors.white.alpha(0.5)};
+
+      &:hover {
+        color: ${colors.white.var};
+      }
+    }
   }
 `
+
+const maxVisibleWarnings = 10
 
 const curlMenuStyle = css`
   &&& {
@@ -365,10 +376,28 @@ export const RequestDetails = () => {
     })
   }
 
+  // expansion is tracked per request id so it resets when another request
+  // is selected
+  const warningsExpandedForRequest = createSignalRef<string | null>(null)
+
+  const warningsExpanded = createMemoRef(
+    () => warningsExpandedForRequest.value === selectedRequest.value?.id,
+  )
+
   function warningsList(warnings: RequestWarning[]) {
+    const hiddenWarnings = createMemoRef(() =>
+      warningsExpanded.value ? 0 : warnings.length - maxVisibleWarnings,
+    )
+
+    const visibleWarnings = createMemoRef(() =>
+      hiddenWarnings.value > 0
+        ? warnings.slice(0, maxVisibleWarnings)
+        : warnings,
+    )
+
     return (
       <div class={warningsListStyle}>
-        <For each={warnings}>
+        <For each={visibleWarnings.value}>
           {(warning) => (
             <div class="warning-item">
               <Icon name="alert-triangle" />
@@ -384,6 +413,18 @@ export const RequestDetails = () => {
             </div>
           )}
         </For>
+
+        {hiddenWarnings.value > 0 && (
+          <ButtonElement
+            class="show-all"
+            onClick={() => {
+              warningsExpandedForRequest.value =
+                selectedRequest.value?.id ?? null
+            }}
+          >
+            …show all (+{hiddenWarnings.value})
+          </ButtonElement>
+        )}
       </div>
     )
   }
