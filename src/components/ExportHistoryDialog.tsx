@@ -4,6 +4,7 @@ import { callsStore, getDisplayHeaders } from '@src/stores/callsStore'
 import { getLogExportEntry, logsStore } from '@src/stores/logsStore'
 import { copyToClipboard } from '@src/utils/copyToClipboard'
 import { downloadJson } from '@src/utils/downloadJson'
+import { getEnvironmentInfo } from '@src/utils/getEnvironmentInfo'
 import { removeSensitiveData } from '@src/utils/removeSensitiveData'
 import { showToast } from '@src/utils/toast'
 import { inline } from '@src/style/helpers/inline'
@@ -207,6 +208,7 @@ export const ExportHistoryDialog = () => {
   function buildExport(): unknown {
     return {
       exportedAt: new Date().toISOString(),
+      environment: getEnvironmentInfo(),
       markers: callsStore.markers
         .filter(
           (marker) =>

@@ -11,6 +11,7 @@ import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
+import { createSignalRef } from '@utils/solid'
 import { tryExpression } from '@utils/tryExpression'
 import { createMemo } from 'solid-js'
 import { css } from 'solid-styled-components'
@@ -94,6 +95,17 @@ const sectionStyle = css`
       color: ${colors.white.alpha(0.4)};
       margin-top: -4px;
     }
+
+    > .show-all {
+      align-self: flex-start;
+      font-size: 12px;
+      padding: 2px 10px;
+      color: ${colors.white.alpha(0.5)};
+
+      &:hover {
+        color: ${colors.white.var};
+      }
+    }
   }
 `
 
@@ -168,6 +180,7 @@ type FlatRequest = {
 }
 
 const duplicatedWindowMs = 10_000
+const maxVisibleRequestCounts = 10
 
 function getResponseSize(request: ApiRequest): number {
   return (
@@ -258,6 +271,37 @@ export const StatsPage = () => {
       totalSize,
     }
   })
+
+  const requestCounts = createMemo(() => {
+    const byCall = new Map<string, { item: FlatRequest; count: number }>()
+
+    for (const item of apiRequests) {
+      const existing = byCall.get(item.callID)
+
+      if (existing) {
+        existing.count++
+        existing.item = item
+      } else {
+        byCall.set(item.callID, { item, count: 1 })
+      }
+    }
+
+    return [...byCall.values()].sort((a, b) => b.count - a.count)
+  })
+
+  const showAllRequestCounts = createSignalRef(false)
+
+  const hiddenRequestCounts = createMemo(() =>
+    showAllRequestCounts.value
+      ? 0
+      : requestCounts().length - maxVisibleRequestCounts,
+  )
+
+  const visibleRequestCounts = createMemo(() =>
+    hiddenRequestCounts() > 0
+      ? requestCounts().slice(0, maxVisibleRequestCounts)
+      : requestCounts(),
+  )
 
   const slowestRequests = createMemo(() => {
     return apiRequests
@@ -417,6 +461,7 @@ export const StatsPage = () => {
 
   const maxSlowDuration = $(slowestRequests()[0]?.request.duration || 1)
   const maxHeavySize = $(heaviestRequests()[0]?.size || 1)
+  const maxRequestCount = $(requestCounts()[0]?.count || 1)
 
   return (
     <div class={containerStyle}>
@@ -465,6 +510,45 @@ export const StatsPage = () => {
           <span class="label">data used</span>
           <span class="value">{formatBytes(overview().totalSize)}</span>
         </div>
+      </div>
+
+      <div class={sectionStyle}>
+        <h2>Request count</h2>
+        <div class="hint">how many times each endpoint was hit</div>
+
+        <For
+          each={visibleRequestCounts()}
+          fallback={<div class="empty">no requests recorded</div>}
+        >
+          {(endpoint) => (
+            <ButtonElement
+              class={statItemStyle}
+              onClick={() => openInExplorer(endpoint.item)}
+            >
+              <div
+                class="bar"
+                style={{
+                  width: `${(endpoint.count / maxRequestCount) * 100}%`,
+                }}
+              />
+              <div class="row">
+                <span class="name">{endpoint.item.callName}</span>
+                <span class="metric">{formatNum(endpoint.count)}x</span>
+              </div>
+            </ButtonElement>
+          )}
+        </For>
+
+        {hiddenRequestCounts() > 0 && (
+          <ButtonElement
+            class="show-all"
+            onClick={() => {
+              showAllRequestCounts.value = true
+            }}
+          >
+            …show all (+{hiddenRequestCounts()})
+          </ButtonElement>
+        )}
       </div>
 
       <div class={sectionStyle}>
