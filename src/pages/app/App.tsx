@@ -3,6 +3,7 @@ import {
   addMarkerDialogState,
 } from '@src/components/AddMarkerDialog'
 import ButtonElement from '@src/components/ButtonElement'
+import { DevtoolsPageErrorBoundary } from '@src/components/DevtoolsPageErrorBoundary'
 import {
   ExportHistoryDialog,
   exportDialogIsOpen,
@@ -255,19 +256,29 @@ export const App = (props: { standalone?: boolean }) => {
         <main>
           <Switch>
             <Match when={uiStore.selectedPage === 'explorer'}>
-              <ApiExplorerPage />
+              <DevtoolsPageErrorBoundary>
+                <ApiExplorerPage />
+              </DevtoolsPageErrorBoundary>
             </Match>
             <Match when={uiStore.selectedPage === 'timeline'}>
-              <TimelineViewPage />
+              <DevtoolsPageErrorBoundary>
+                <TimelineViewPage />
+              </DevtoolsPageErrorBoundary>
             </Match>
             <Match when={uiStore.selectedPage === 'stats'}>
-              <StatsPage />
+              <DevtoolsPageErrorBoundary>
+                <StatsPage />
+              </DevtoolsPageErrorBoundary>
             </Match>
             <Match when={uiStore.selectedPage === 'logs'}>
-              <LogsPage />
+              <DevtoolsPageErrorBoundary>
+                <LogsPage />
+              </DevtoolsPageErrorBoundary>
             </Match>
             <Match when={uiStore.selectedPage === 'caller'}>
-              <CallerPage />
+              <DevtoolsPageErrorBoundary>
+                <CallerPage />
+              </DevtoolsPageErrorBoundary>
             </Match>
           </Switch>
         </main>
