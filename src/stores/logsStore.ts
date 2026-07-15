@@ -2,6 +2,7 @@ import { approxJsonSize } from '@utils/approxJsonSize'
 import { klona } from 'klona/json'
 import { nanoid } from 'nanoid'
 import { createStore, produce } from 'solid-js/store'
+import { recordingIsPaused } from '@src/stores/recordingStore'
 
 export type LogSeverity = 'error' | 'warning' | 'info'
 
@@ -72,6 +73,8 @@ export function addLog(log: {
   details?: unknown
   time?: number
 }) {
+  if (recordingIsPaused.value) return
+
   setLogsStore(
     produce((draft) => {
       draft.logs.push({
@@ -92,6 +95,14 @@ export function addLog(log: {
 
 export function clearLogs() {
   setLogsStore({ logs: [] })
+}
+
+export function clearLogsBefore(time: number) {
+  setLogsStore('logs', (logs) => logs.filter((log) => log.time >= time))
+}
+
+export function clearLogsAfter(time: number) {
+  setLogsStore('logs', (logs) => logs.filter((log) => log.time <= time))
 }
 
 export function removeLog(id: string) {

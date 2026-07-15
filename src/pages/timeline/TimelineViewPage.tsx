@@ -1,4 +1,7 @@
-import { openAddMarkerDialog } from '@src/components/AddMarkerDialog'
+import {
+  openAddMarkerDialog,
+  openMarkerDialog,
+} from '@src/components/AddMarkerDialog'
 import ButtonElement from '@src/components/ButtonElement'
 import Icon from '@src/components/Icon'
 import { openExportDialog } from '@src/components/ExportHistoryDialog'
@@ -10,7 +13,6 @@ import {
   clearRequestsAfter,
   clearRequestsBefore,
   clearRequestsInRange,
-  removeMarker,
 } from '@src/stores/callsStore'
 import { setUiStore } from '@src/stores/uiStore'
 import { formatNum } from '@src/utils/formatNum'
@@ -789,8 +791,8 @@ export const TimelineViewPage = () => {
                     <button
                       title={`${marker.label} · ${dayjs(marker.time).format(
                         'HH:mm:ss.SSS',
-                      )} · click to remove`}
-                      onClick={() => removeMarker(marker.id)}
+                      )} · click for options`}
+                      onClick={() => openMarkerDialog(marker)}
                     >
                       {marker.label}
                     </button>

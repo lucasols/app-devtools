@@ -2,6 +2,7 @@ import ButtonElement from '@src/components/ButtonElement'
 import Icon from '@src/components/Icon'
 import { JsonViewer } from '@src/components/JsonViewer/JsonViewer'
 import Select from '@src/components/Select'
+import { openMarkerDialog } from '@src/components/AddMarkerDialog'
 import { TimelineMarker, callsStore } from '@src/stores/callsStore'
 import {
   DevtoolsLog,
@@ -467,14 +468,18 @@ export const LogsPage = () => {
         >
           {(item) =>
             item.itemType === 'marker' ? (
-              <div class="marker">
+              <ButtonElement
+                class="marker"
+                title="Open marker options"
+                onClick={() => openMarkerDialog(item.marker)}
+              >
                 <span class="time">
                   {dayjs(item.marker.time).format('HH:mm:ss')}
                 </span>
                 <Icon name="flag" />
                 <span class="label">{item.marker.label}</span>
                 <div class="line" />
-              </div>
+              </ButtonElement>
             ) : (
               <LogRow
                 log={item.log}

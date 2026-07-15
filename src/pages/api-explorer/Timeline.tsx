@@ -1,4 +1,5 @@
 import ButtonElement from '@src/components/ButtonElement'
+import { openMarkerDialog } from '@src/components/AddMarkerDialog'
 import {
   ApiRequest,
   TimelineMarker,
@@ -10,6 +11,7 @@ import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
+import { formatNum } from '@src/utils/formatNum'
 import { reverseCopy } from '@utils/arrayUtils'
 import dayjs from 'dayjs'
 import { createMemo } from 'solid-js'
@@ -91,6 +93,13 @@ const requestItemStyle = css`
         border: 1px solid ${colors.secondary.alpha(0.6)};
         border-radius: 4px;
         padding: 0 3px;
+        flex-shrink: 0;
+      }
+
+      > .duration {
+        font-family: ${fonts.decorative};
+        font-size: 11px;
+        color: ${colors.white.alpha(0.5)};
         flex-shrink: 0;
       }
     }
@@ -199,15 +208,18 @@ export const Timeline = () => {
           {(item) => {
             if (item.itemType === 'marker') {
               return (
-                <div
+                <ButtonElement
                   class={markerItemStyle}
-                  title={dayjs(item.marker.time).format('HH:mm:ss.SSS')}
+                  title={`${dayjs(item.marker.time).format(
+                    'HH:mm:ss.SSS',
+                  )} · click for options`}
+                  onClick={() => openMarkerDialog(item.marker)}
                 >
                   <span>
                     {item.marker.label} ·{' '}
                     {dayjs(item.marker.time).format('HH:mm:ss')}
                   </span>
-                </div>
+                </ButtonElement>
               )
             }
 
@@ -253,6 +265,15 @@ export const Timeline = () => {
 
                   {request.status === 'pending' && (
                     <span class="pending-indicator">pending</span>
+                  )}
+
+                  {request.status !== 'pending' && (
+                    <span class="duration">
+                      {formatNum(request.duration, {
+                        maximumFractionDigits: 0,
+                      })}
+                      ms
+                    </span>
                   )}
 
                   {!!payload && (

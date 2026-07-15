@@ -24,6 +24,10 @@ import {
   type LogSeverity,
 } from '@src/stores/logsStore'
 import {
+  recordingIsPaused,
+  setRecordingPaused,
+} from '@src/stores/recordingStore'
+import {
   type RequestCaller,
   type RequestCallerInput,
   type RequestCallerSelectOption,
@@ -48,6 +52,8 @@ export {
   clearLogs,
   DevtoolsLog,
   LogSeverity,
+  recordingIsPaused,
+  setRecordingPaused,
   RequestCaller,
   RequestCallerInput,
   RequestCallerSelectOption,
@@ -58,6 +64,7 @@ if (import.meta.env.DEV) {
 
   initializeDevTools({
     shortcut: 'D',
+    markerShortcut: '$mod+M',
     visibleRequestHeaders: ['x-trace-id', 'x-app-version'],
     requestCallers: [
       {

@@ -1,5 +1,5 @@
 import { toggleDevTools } from '@src/initializeApp'
-import { Config, setConfig } from '@src/stores/callsStore'
+import { Config, addMarker, setConfig } from '@src/stores/callsStore'
 import { setMaxLogsSizeMb } from '@src/stores/logsStore'
 import {
   RequestCaller,
@@ -11,6 +11,7 @@ import { tinykeys } from 'tinykeys'
 export function initializeDevTools({
   callsProcessor,
   shortcut,
+  markerShortcut,
   requestCallers,
   visibleRequestHeaders,
   sensitiveDataFields,
@@ -20,6 +21,8 @@ export function initializeDevTools({
   callsProcessor?: Config['callsProcessor']
   /** use $mod for CMD or Ctrl */
   shortcut: string
+  /** adds a timeline marker immediately, use $mod for CMD or Ctrl */
+  markerShortcut?: string
   /**
    * callers used by the request caller tab to perform requests using the
    * consumer app data fetching mechanisms
@@ -51,21 +54,35 @@ export function initializeDevTools({
    */
   maxLogsSizeMb?: number
 }) {
+  function userIsEnteringText() {
+    const active = document.activeElement
+
+    return (
+      active instanceof HTMLElement &&
+      (active.isContentEditable ||
+        active.tagName === 'INPUT' ||
+        active.tagName === 'TEXTAREA')
+    )
+  }
+
   tinykeys(window, {
     [shortcut]: (e) => {
-      const active = document.activeElement
-      const enteringText =
-        active instanceof HTMLElement &&
-        (active.isContentEditable ||
-          active.tagName === 'INPUT' ||
-          active.tagName === 'TEXTAREA')
-
-      if (enteringText) return
+      if (userIsEnteringText()) return
 
       e.preventDefault()
 
       toggleDevTools()
     },
+    ...(markerShortcut
+      ? {
+          [markerShortcut]: (e: KeyboardEvent) => {
+            if (userIsEnteringText()) return
+
+            e.preventDefault()
+            addMarker()
+          },
+        }
+      : {}),
   })
 
   setConfig({

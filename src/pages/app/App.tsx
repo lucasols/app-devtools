@@ -1,7 +1,6 @@
 import {
   AddMarkerDialog,
   addMarkerDialogState,
-  openAddMarkerDialog,
 } from '@src/components/AddMarkerDialog'
 import ButtonElement from '@src/components/ButtonElement'
 import {
@@ -17,8 +16,12 @@ import { CallerPage } from '@src/pages/caller/CallerPage'
 import { LogsPage } from '@src/pages/logs/LogsPage'
 import { StatsPage } from '@src/pages/stats/StatsPage'
 import { TimelineViewPage } from '@src/pages/timeline/TimelineViewPage'
-import { clearHistory } from '@src/stores/callsStore'
+import { addMarker, clearHistory } from '@src/stores/callsStore'
 import { clearLogs } from '@src/stores/logsStore'
+import {
+  recordingIsPaused,
+  toggleRecordingPaused,
+} from '@src/stores/recordingStore'
 import {
   DevtoolsPage,
   setUiStore,
@@ -191,10 +194,23 @@ export const App = (props: { standalone?: boolean }) => {
             <ButtonElement
               title="Add a marker to the timeline"
               onClick={() => {
-                openAddMarkerDialog()
+                addMarker()
+                showToast('Marker added')
               }}
             >
               <Icon name="flag" />
+            </ButtonElement>
+
+            <ButtonElement
+              classList={{ 'toggle-on': recordingIsPaused.value }}
+              title={
+                recordingIsPaused.value
+                  ? 'Resume recording'
+                  : 'Pause recording'
+              }
+              onClick={toggleRecordingPaused}
+            >
+              <Icon name={recordingIsPaused.value ? 'play' : 'pause'} />
             </ButtonElement>
 
             <ButtonElement

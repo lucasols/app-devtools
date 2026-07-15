@@ -14,6 +14,7 @@ import { klona } from 'klona/json'
 import { nanoid } from 'nanoid'
 import { batch } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
+import { recordingIsPaused } from '@src/stores/recordingStore'
 
 export type {
   UnusedResponseData,
@@ -117,6 +118,27 @@ export function removeMarker(id: string) {
     produce((draft) => {
       draft.markers = draft.markers.filter((marker) => marker.id !== id)
     }),
+  )
+}
+
+export function renameMarker(id: string, label: string) {
+  setCallsStore(
+    'markers',
+    (marker) => marker.id === id,
+    'label',
+    label,
+  )
+}
+
+export function clearMarkersBefore(time: number) {
+  setCallsStore('markers', (markers) =>
+    markers.filter((marker) => marker.time >= time),
+  )
+}
+
+export function clearMarkersAfter(time: number) {
+  setCallsStore('markers', (markers) =>
+    markers.filter((marker) => marker.time <= time),
   )
 }
 
@@ -516,6 +538,10 @@ export function addCall(request: {
    */
   headers?: Record<string, string | null | undefined>
 }): RegisterCallResult {
+  if (recordingIsPaused.value) {
+    return () => undefined
+  }
+
   const startTime = request.startTime || Date.now()
 
   const requestID = nanoid()

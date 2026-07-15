@@ -18,6 +18,7 @@ export type Icons =
   | 'x'
   | 'terminal'
   | 'play'
+  | 'pause'
   | 'file-text'
   | 'alert-triangle'
   | 'minimize-2'

@@ -1,6 +1,17 @@
 import ButtonElement from '@src/components/ButtonElement'
 import Icon from '@src/components/Icon'
-import { addMarker } from '@src/stores/callsStore'
+import {
+  TimelineMarker,
+  addMarker,
+  callsStore,
+  clearMarkersAfter,
+  clearMarkersBefore,
+  clearRequestsAfter,
+  clearRequestsBefore,
+  removeMarker,
+  renameMarker,
+} from '@src/stores/callsStore'
+import { clearLogsAfter, clearLogsBefore } from '@src/stores/logsStore'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts, shadows } from '@src/style/theme'
@@ -12,10 +23,15 @@ import { css } from 'solid-styled-components'
 export const addMarkerDialogState = createSignalRef<{
   /** marker time, defaults to now */
   time?: number
+  markerId?: string
 } | null>(null)
 
 export function openAddMarkerDialog(atTime?: number) {
   addMarkerDialogState.value = { time: atTime }
+}
+
+export function openMarkerDialog(marker: TimelineMarker) {
+  addMarkerDialogState.value = { markerId: marker.id }
 }
 
 const overlayStyle = css`
@@ -89,21 +105,83 @@ const dialogStyle = css`
         }
       }
     }
+
+    > .history-actions {
+      ${stack({ align: 'stretch' })};
+      gap: 6px;
+      padding-top: 4px;
+      border-top: 1px solid ${colors.white.alpha(0.1)};
+
+      > button {
+        text-align: left;
+        font-size: 12px;
+        border-radius: 4px;
+        padding: 7px 9px;
+        color: ${colors.white.alpha(0.75)};
+        background: ${colors.white.alpha(0.04)};
+
+        &:hover {
+          color: ${colors.error.var};
+          background: ${colors.white.alpha(0.08)};
+        }
+      }
+    }
   }
 `
 
 export const AddMarkerDialog = () => {
-  let label = $signal('')
+  const marker = $(
+    callsStore.markers.find(
+      (item) => item.id === addMarkerDialogState.value?.markerId,
+    ),
+  )
+  let label = $signal(marker?.label ?? '')
 
-  const markerTime = $(addMarkerDialogState.value?.time)
+  const markerTime = $(marker?.time ?? addMarkerDialogState.value?.time)
 
   function close() {
     addMarkerDialogState.value = null
   }
 
   function submit() {
-    addMarker(label.trim() || undefined, markerTime)
-    showToast('Marker added')
+    const trimmedLabel = label.trim()
+
+    if (marker) {
+      renameMarker(marker.id, trimmedLabel || marker.label)
+      showToast('Marker renamed')
+    } else {
+      addMarker(trimmedLabel || undefined, markerTime)
+      showToast('Marker added')
+    }
+
+    close()
+  }
+
+  function clearBefore() {
+    if (!marker) return
+
+    clearRequestsBefore(marker.time)
+    clearLogsBefore(marker.time)
+    clearMarkersBefore(marker.time)
+    showToast('History before marker cleared')
+    close()
+  }
+
+  function clearAfter() {
+    if (!marker) return
+
+    clearRequestsAfter(marker.time)
+    clearLogsAfter(marker.time)
+    clearMarkersAfter(marker.time)
+    showToast('History after marker cleared')
+    close()
+  }
+
+  function deleteMarker() {
+    if (!marker) return
+
+    removeMarker(marker.id)
+    showToast('Marker removed')
     close()
   }
 
@@ -118,7 +196,7 @@ export const AddMarkerDialog = () => {
     >
       <div class={dialogStyle}>
         <h1>
-          add marker
+          {marker ? 'marker options' : 'add marker'}
           {markerTime !== undefined && (
             <span class="time">
               at {dayjs(markerTime).format('HH:mm:ss.SSS')}
@@ -128,7 +206,7 @@ export const AddMarkerDialog = () => {
 
         <input
           type="text"
-          placeholder="Marker label (optional)"
+          placeholder={marker ? 'Marker label' : 'Marker label (optional)'}
           value={label}
           ref={(el) => {
             setTimeout(() => el.focus())
@@ -151,9 +229,21 @@ export const AddMarkerDialog = () => {
 
           <ButtonElement class="primary" onClick={submit}>
             <Icon name="flag" />
-            Add marker
+            {marker ? 'Rename' : 'Add marker'}
           </ButtonElement>
         </div>
+
+        <Show when={marker}>
+          <div class="history-actions">
+            <ButtonElement onClick={clearBefore}>
+              Clear history before marker
+            </ButtonElement>
+            <ButtonElement onClick={clearAfter}>
+              Clear history after marker
+            </ButtonElement>
+            <ButtonElement onClick={deleteMarker}>Remove marker</ButtonElement>
+          </div>
+        </Show>
       </div>
     </div>
   )
