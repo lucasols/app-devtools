@@ -335,9 +335,11 @@ export const RequestDetails = () => {
   }
 
   const responseSize = createMemoRef(() => {
-    if (!selectedRequest.value?.response) return false
+    const request = selectedRequest.value
 
-    return formatBytes(JSON.stringify(selectedRequest.value.response).length)
+    if (!request?.response) return false
+
+    return formatBytes(JSON.stringify(request.response).length)
   })
 
   function copyRequestAsJson() {
@@ -482,44 +484,47 @@ export const RequestDetails = () => {
 
   return (
     <div class={containerStyle}>
-      {selectedRequest.value && (
-        <>
+      <Show
+        when={selectedRequest.value}
+        keyed
+      >
+        {(request) => (
+          <>
           <h1>
             <span class="type">
-              {selectedRequest.value.type === 'ws'
-                ? `WS ${selectedRequest.value.subType}`
+              {request.type === 'ws'
+                ? `WS ${request.subType}`
                 : 'API'}
             </span>
             <span class="separator">{'|'}</span>
-            {selectedRequest.value.callName}
-            {selectedRequest.value.alias && (
+            {request.callName}
+            {request.alias && (
               <span class="separator">{'|'}</span>
             )}
-            {selectedRequest.value.alias}
+            {request.alias}
           </h1>
 
-          {selectedRequest.value.callPath !==
-            selectedRequest.value.callName && (
-            <h2>{selectedRequest.value.callPath}</h2>
+          {request.callPath !== request.callName && (
+            <h2>{request.callPath}</h2>
           )}
 
           <div class="tags">
-            {selectedRequest.value.method && (
-              <div class="method">{selectedRequest.value.method}</div>
+            {request.method && (
+              <div class="method">{request.method}</div>
             )}
 
-            {selectedRequest.value.code && (
+            {request.code && (
               <div
                 class="code"
                 classList={{
-                  error: selectedRequest.value.code >= 400,
+                  error: request.code >= 400,
                 }}
               >
-                {selectedRequest.value.code}
+                {request.code}
               </div>
             )}
 
-            {selectedRequest.value.isError && (
+            {request.isError && (
               <div class="tag error">Has Error</div>
             )}
 
@@ -532,11 +537,11 @@ export const RequestDetails = () => {
               </div>
             )}
 
-            {selectedRequest.value.status === 'pending' && (
+            {request.status === 'pending' && (
               <div class="tag pending">Pending</div>
             )}
 
-            <For each={selectedRequest.value.tags}>
+            <For each={request.tags}>
               {(tag) => <div class="tag">{tag}</div>}
             </For>
 
@@ -550,7 +555,7 @@ export const RequestDetails = () => {
                 JSON
               </ButtonElement>
 
-              {selectedRequest.value.type !== 'ws' && (
+              {request.type !== 'ws' && (
                 <div class={curlMenuStyle}>
                   <ButtonElement
                     class="action-button"
@@ -593,17 +598,13 @@ export const RequestDetails = () => {
                 </div>
               )}
 
-              {selectedRequest.value.type !== 'ws' &&
+              {request.type !== 'ws' &&
                 requestCallerStore.callers.length > 0 && (
                   <ButtonElement
                     class="action-button"
                     title="Modify and resend this request in the caller tab"
                     onClick={() => {
-                      const request = selectedRequest.value
-
-                      if (request) {
-                        openRequestInCaller(request)
-                      }
+                      openRequestInCaller(request)
                     }}
                   >
                     <Icon name="send" />
@@ -615,15 +616,14 @@ export const RequestDetails = () => {
 
           <div class={tabsStyle}>
             {getTab('summary', 'Summary')}
-            {!!selectedRequest.value.payload && getTab('payload', 'Payload')}
-            {!!selectedRequest.value.searchParams &&
+            {!!request.payload && getTab('payload', 'Payload')}
+            {!!request.searchParams &&
               getTab('urlParams', 'URL Search Params')}
             {getTab('response', 'Response')}
             {!!unusedResponseData.value && getTab('unusedData', 'Unused Data')}
             {!!requestWarnings.value.length &&
               getTab('warnings', 'Warnings')}
-            {!!selectedRequest.value.metadata &&
-              getTab('metadata', 'Metadata')}
+            {!!request.metadata && getTab('metadata', 'Metadata')}
             {!!displayHeaders.value && getTab('headers', 'Headers')}
           </div>
 
@@ -636,7 +636,7 @@ export const RequestDetails = () => {
                   </Section>
                 )}
 
-                {!!selectedRequest.value.payload && (
+                {!!request.payload && (
                   <Section title="Payload">
                     <JsonViewer
                       value={payloadToShow.value}
@@ -645,19 +645,19 @@ export const RequestDetails = () => {
                   </Section>
                 )}
 
-                {!!selectedRequest.value.searchParams && (
+                {!!request.searchParams && (
                   <Section title="URL Search Params">
                     <JsonViewer
-                      value={selectedRequest.value.searchParams}
+                      value={request.searchParams}
                       compact
                     />
                   </Section>
                 )}
 
-                {!!selectedRequest.value.response && (
+                {!!request.response && (
                   <Section title="Response">
                     <JsonViewer
-                      value={selectedRequest.value.response}
+                      value={request.response}
                       compact
                     />
                   </Section>
@@ -675,10 +675,10 @@ export const RequestDetails = () => {
                 <Section title="Stats">
                   <TableView
                     rows={[
-                      selectedRequest.value.type !== 'ws' && {
+                      request.type !== 'ws' && {
                         name: 'Duration',
                         value:
-                          selectedRequest.value.status === 'pending' ? (
+                          request.status === 'pending' ? (
                             <span style={{ color: colors.secondary.var }}>
                               pending…
                             </span>
@@ -686,14 +686,14 @@ export const RequestDetails = () => {
                             <span
                               style={{
                                 color:
-                                  selectedRequest.value.duration < 500
+                                  request.duration < 500
                                     ? colors.success.var
-                                    : selectedRequest.value.duration > 1000
+                                    : request.duration > 1000
                                     ? colors.error.var
                                     : undefined,
                               }}
                             >
-                              {formatNum(selectedRequest.value.duration, {
+                              {formatNum(request.duration, {
                                 maximumFractionDigits: 0,
                               })}{' '}
                               ms
@@ -705,14 +705,12 @@ export const RequestDetails = () => {
                         value: (
                           <span
                             title={dayjs(
-                              selectedRequest.value.startTime,
+                              request.startTime,
                             ).format('YYYY-MM-DD HH:mm:ss.SSS')}
                           >
-                            {`${dayjs(selectedRequest.value.startTime).format(
+                            {`${dayjs(request.startTime).format(
                               'HH:mm:ss',
-                            )} (${dayjs(
-                              selectedRequest.value.startTime,
-                            ).fromNow()})`}
+                            )} (${dayjs(request.startTime).fromNow()})`}
                           </span>
                         ),
                       },
@@ -732,9 +730,9 @@ export const RequestDetails = () => {
                   />
                 </Section>
 
-                <Show when={selectedRequest.value.type !== 'ws'}>
+                <Show when={request.type !== 'ws'}>
                   <Section title="Metadata">
-                    <JsonViewer value={selectedRequest.value.metadata} />
+                    <JsonViewer value={request.metadata} />
                   </Section>
                 </Show>
 
@@ -766,7 +764,7 @@ export const RequestDetails = () => {
                   class={fullTabSectionStyle}
                 >
                   <JsonViewer
-                    value={selectedRequest.value.response}
+                    value={request.response}
                     search
                   />
                 </Section>
@@ -778,7 +776,7 @@ export const RequestDetails = () => {
                   class={fullTabSectionStyle}
                 >
                   <JsonViewer
-                    value={selectedRequest.value.searchParams}
+                    value={request.searchParams}
                     search
                   />
                 </Section>
@@ -811,7 +809,7 @@ export const RequestDetails = () => {
                   class={fullTabSectionStyle}
                 >
                   <JsonViewer
-                    value={selectedRequest.value.metadata}
+                    value={request.metadata}
                     search
                   />
                 </Section>
@@ -830,8 +828,9 @@ export const RequestDetails = () => {
               </Match>
             </Switch>
           </div>
-        </>
-      )}
+          </>
+        )}
+      </Show>
     </div>
   )
 }

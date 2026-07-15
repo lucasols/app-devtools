@@ -1,6 +1,7 @@
 import js from '@eslint/js'
 import { rules as extendedLintRules } from '@lucasols/eslint-plugin-extended-lint'
 import tseslint from 'typescript-eslint'
+import noUnsafeReactiveGuard from './eslint-rules/no-unsafe-reactive-guard.js'
 
 const isCI = process.env.CI === 'true'
 
@@ -25,8 +26,14 @@ export default tseslint.config(
     },
     plugins: {
       '@lucasols/extended-lint': { rules: extendedLintRules },
+      local: {
+        rules: {
+          'no-unsafe-reactive-guard': noUnsafeReactiveGuard,
+        },
+      },
     },
     rules: {
+      'local/no-unsafe-reactive-guard': ERROR,
       'no-warning-comments': [
         ERROR_IN_CI,
         { terms: isCI ? ['FIX:', 'FIX-LATER:', 'FIXLATER:'] : ['FIX:'] },
