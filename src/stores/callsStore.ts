@@ -89,17 +89,40 @@ export type TimelineMarker = {
   time: number
 }
 
+export type NavigationChange = {
+  id: string
+  from: string
+  to: string
+  time: number
+}
+
 type State = {
   calls: {
     [callID: string]: ApiCall
   }
   markers: TimelineMarker[]
+  navigationChanges: NavigationChange[]
 }
 
 export const [callsStore, setCallsStore] = createStore<State>({
   calls: {},
   markers: [],
+  navigationChanges: [],
 })
+
+export function addNavigationChange(
+  from: string,
+  to: string,
+  time = Date.now(),
+) {
+  if (recordingIsPaused.value || from === to) return
+
+  setCallsStore(
+    produce((draft) => {
+      draft.navigationChanges.push({ id: nanoid(), from, to, time })
+    }),
+  )
+}
 
 export function addMarker(label?: string, time?: number) {
   setCallsStore(
@@ -142,9 +165,21 @@ export function clearMarkersAfter(time: number) {
   )
 }
 
+export function clearNavigationChangesBefore(time: number) {
+  setCallsStore('navigationChanges', (navigationChanges) =>
+    navigationChanges.filter((navigation) => navigation.time >= time),
+  )
+}
+
+export function clearNavigationChangesAfter(time: number) {
+  setCallsStore('navigationChanges', (navigationChanges) =>
+    navigationChanges.filter((navigation) => navigation.time <= time),
+  )
+}
+
 export function clearHistory() {
   batch(() => {
-    setCallsStore({ calls: {}, markers: [] })
+    setCallsStore({ calls: {}, markers: [], navigationChanges: [] })
     lastAddedCallID.value = ''
   })
 }

@@ -4,6 +4,9 @@ import { createStore } from 'solid-js/store'
 /** reveals the raw values of masked headers and sensitive payload fields */
 export const showSensitiveValues = createSignalRef(false)
 
+/** shows captured browser route changes in request timelines */
+export const showNavigationChanges = createSignalRef(false)
+
 export type DevtoolsPage = 'explorer' | 'timeline' | 'stats' | 'logs' | 'caller'
 
 type State = {

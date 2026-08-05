@@ -2,11 +2,16 @@ import ButtonElement from '@src/components/ButtonElement'
 import { openMarkerDialog } from '@src/components/AddMarkerDialog'
 import {
   ApiRequest,
+  NavigationChange,
   TimelineMarker,
   callsStore,
   lastAddedCallID,
 } from '@src/stores/callsStore'
-import { setUiStore, uiStore } from '@src/stores/uiStore'
+import {
+  setUiStore,
+  showNavigationChanges,
+  uiStore,
+} from '@src/stores/uiStore'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
@@ -24,13 +29,30 @@ const containerStyle = css`
     ${stack()};
     border-right: 1px solid ${colors.white.alpha(0.1)};
 
-    > h1 {
-      font-size: 16px;
-      padding-left: 12px;
-      padding-top: 10px;
-      font-family: ${fonts.decorative};
-      color: ${colors.secondary.var};
-      padding-bottom: 16px;
+    > .header {
+      ${inline({ gap: 8, justify: 'spaceBetween' })};
+      width: 100%;
+      padding: 10px 12px 16px;
+
+      > h1 {
+        font-size: 16px;
+        font-family: ${fonts.decorative};
+        color: ${colors.secondary.var};
+      }
+
+      > button {
+        font-size: 11px;
+        opacity: 0.5;
+
+        &:hover,
+        &.active {
+          opacity: 1;
+        }
+
+        &.active {
+          color: ${colors.primary.var};
+        }
+      }
     }
   }
 `
@@ -128,6 +150,28 @@ const markerItemStyle = css`
   }
 `
 
+const navigationItemStyle = css`
+  &&& {
+    ${inline({ gap: 8 })};
+    padding: 2px 12px;
+    font-size: 12px;
+    color: ${colors.secondary.var};
+    font-family: ${fonts.decorative};
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1 1;
+      border-top: 1px dashed ${colors.secondary.alpha(0.5)};
+    }
+
+    > span {
+      ${ellipsis};
+      flex-shrink: 1;
+    }
+  }
+`
+
 const emptyStateStyle = css`
   &&& {
     opacity: 0.4;
@@ -140,6 +184,11 @@ const emptyStateStyle = css`
 type TimelineItem =
   | { itemType: 'request'; request: ApiRequest; time: number }
   | { itemType: 'marker'; marker: TimelineMarker; time: number }
+  | {
+      itemType: 'navigation'
+      navigation: NavigationChange
+      time: number
+    }
 
 export const Timeline = () => {
   const selectedCall = createMemo(() => {
@@ -188,6 +237,16 @@ export const Timeline = () => {
       items.push({ itemType: 'marker', marker, time: marker.time })
     }
 
+    if (showNavigationChanges.value) {
+      for (const navigation of callsStore.navigationChanges) {
+        items.push({
+          itemType: 'navigation',
+          navigation,
+          time: navigation.time,
+        })
+      }
+    }
+
     // newest first
     return items.sort((a, b) => b.time - a.time)
   })
@@ -198,7 +257,23 @@ export const Timeline = () => {
 
   return (
     <div class={containerStyle}>
-      <h1>timeline</h1>
+      <div class="header">
+        <h1>timeline</h1>
+
+        <ButtonElement
+          classList={{ active: showNavigationChanges.value }}
+          title={
+            showNavigationChanges.value
+              ? 'Hide navigation changes in timelines'
+              : 'Show navigation changes in timelines'
+          }
+          onClick={() => {
+            showNavigationChanges.value = !showNavigationChanges.value
+          }}
+        >
+          navigation
+        </ButtonElement>
+      </div>
 
       <div class={itemsContainerStyle}>
         <For
@@ -220,6 +295,22 @@ export const Timeline = () => {
                     {dayjs(item.marker.time).format('HH:mm:ss')}
                   </span>
                 </ButtonElement>
+              )
+            }
+
+            if (item.itemType === 'navigation') {
+              return (
+                <div
+                  class={navigationItemStyle}
+                  title={`${item.navigation.from} → ${item.navigation.to} · ${dayjs(
+                    item.navigation.time,
+                  ).format('HH:mm:ss.SSS')}`}
+                >
+                  <span>
+                    Navigation · {item.navigation.to} ·{' '}
+                    {dayjs(item.navigation.time).format('HH:mm:ss')}
+                  </span>
+                </div>
               )
             }
 

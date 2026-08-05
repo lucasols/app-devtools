@@ -216,9 +216,22 @@ export const ExportHistoryDialog = () => {
             (marker.time >= timeRange.start && marker.time <= timeRange.end),
         )
         .map((marker) => ({
-        label: marker.label,
-        time: marker.time,
-        timeISO: new Date(marker.time).toISOString(),
+          label: marker.label,
+          time: marker.time,
+          timeISO: new Date(marker.time).toISOString(),
+        })),
+      navigationChanges: callsStore.navigationChanges
+        .filter(
+          (navigation) =>
+            !timeRange ||
+            (navigation.time >= timeRange.start &&
+              navigation.time <= timeRange.end),
+        )
+        .map((navigation) => ({
+          from: navigation.from,
+          to: navigation.to,
+          time: navigation.time,
+          timeISO: new Date(navigation.time).toISOString(),
         })),
       calls: callsEntries
         .filter(([callID]) => selectedCalls[callID])

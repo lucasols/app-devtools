@@ -1,5 +1,10 @@
 import { toggleDevTools } from '@src/initializeApp'
-import { Config, addMarker, setConfig } from '@src/stores/callsStore'
+import {
+  Config,
+  addMarker,
+  addNavigationChange,
+  setConfig,
+} from '@src/stores/callsStore'
 import { setMaxLogsSizeMb } from '@src/stores/logsStore'
 import {
   RequestCaller,
@@ -7,6 +12,61 @@ import {
 } from '@src/stores/requestCallerStore'
 
 import { tinykeys } from 'tinykeys'
+
+let stopTrackingNavigationChanges = () => undefined
+
+function getCurrentNavigationPath(): string {
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`
+}
+
+function initializeNavigationChangeTracking() {
+  stopTrackingNavigationChanges()
+  stopTrackingNavigationChanges = () => undefined
+
+  let currentPath = getCurrentNavigationPath()
+
+  function recordNavigationChange() {
+    const nextPath = getCurrentNavigationPath()
+
+    addNavigationChange(currentPath, nextPath)
+    currentPath = nextPath
+  }
+
+  const originalPushState = window.history.pushState
+  const originalReplaceState = window.history.replaceState
+
+  const trackedPushState: History['pushState'] = function (data, unused, url) {
+    originalPushState.call(window.history, data, unused, url)
+    recordNavigationChange()
+  }
+
+  const trackedReplaceState: History['replaceState'] = function (
+    data,
+    unused,
+    url,
+  ) {
+    originalReplaceState.call(window.history, data, unused, url)
+    recordNavigationChange()
+  }
+
+  window.history.pushState = trackedPushState
+  window.history.replaceState = trackedReplaceState
+  window.addEventListener('popstate', recordNavigationChange)
+  window.addEventListener('hashchange', recordNavigationChange)
+
+  stopTrackingNavigationChanges = () => {
+    if (window.history.pushState === trackedPushState) {
+      window.history.pushState = originalPushState
+    }
+
+    if (window.history.replaceState === trackedReplaceState) {
+      window.history.replaceState = originalReplaceState
+    }
+
+    window.removeEventListener('popstate', recordNavigationChange)
+    window.removeEventListener('hashchange', recordNavigationChange)
+  }
+}
 
 export function initializeDevTools({
   callsProcessor,
@@ -99,4 +159,6 @@ export function initializeDevTools({
   if (requestCallers) {
     setRequestCallers(requestCallers)
   }
+
+  initializeNavigationChangeTracking()
 }

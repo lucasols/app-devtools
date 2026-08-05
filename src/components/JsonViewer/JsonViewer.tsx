@@ -515,7 +515,7 @@ export const JsonViewer = (props: JsonViewerProps) => {
   let searchQuery = $signal('')
   let debouncedQuery = $signal('')
   let searchMode = $signal<JsonSearchMode>('text')
-  let showOriginalIndexes = $signal(false)
+  let showOriginalIndexes = $signal(true)
   let expandDepth = $signal<JsonViewerExpandDepth>('all')
   let userSetExpandDepth = $signal(false)
   let treeRevision = $signal(1)

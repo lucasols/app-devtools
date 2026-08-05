@@ -8,13 +8,14 @@ import { openExportDialog } from '@src/components/ExportHistoryDialog'
 import { getTypeTag, typeTagStyle } from '@src/pages/api-explorer/typeTag'
 import {
   ApiRequest,
+  NavigationChange,
   TimelineMarker,
   callsStore,
   clearRequestsAfter,
   clearRequestsBefore,
   clearRequestsInRange,
 } from '@src/stores/callsStore'
-import { setUiStore } from '@src/stores/uiStore'
+import { setUiStore, showNavigationChanges } from '@src/stores/uiStore'
 import { formatNum } from '@src/utils/formatNum'
 import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
@@ -141,6 +142,12 @@ const brushStyle = css`
         bottom: 2px;
         background: ${colors.warning.var};
       }
+
+      &.navigation {
+        top: 2px;
+        bottom: 2px;
+        background: ${colors.secondary.var};
+      }
     }
 
     .shade {
@@ -246,6 +253,32 @@ const waterfallStyle = css`
           margin-left: 2px;
           white-space: nowrap;
           display: block;
+        }
+      }
+
+      > .navigation-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 0;
+        border-left: 1px dashed ${colors.secondary.alpha(0.7)};
+        z-index: 1;
+
+        > span {
+          position: sticky;
+          top: 0;
+          font-size: 10px;
+          font-family: ${fonts.decorative};
+          color: ${colors.secondary.var};
+          background: ${colors.bgPrimary.var};
+          border: 1px solid ${colors.secondary.alpha(0.5)};
+          border-radius: 3px;
+          padding: 0 4px;
+          margin-left: 2px;
+          white-space: nowrap;
+          display: block;
+          max-width: 180px;
+          ${ellipsis};
         }
       }
 
@@ -425,6 +458,13 @@ export const TimelineViewPage = () => {
       max = Math.max(max, marker.time)
     }
 
+    if (showNavigationChanges.value) {
+      for (const navigation of callsStore.navigationChanges) {
+        min = Math.min(min, navigation.time)
+        max = Math.max(max, navigation.time)
+      }
+    }
+
     if (min === Infinity) return null
 
     return { start: min, end: Math.max(max, min + 100) }
@@ -563,6 +603,19 @@ export const TimelineViewPage = () => {
     )
   })
 
+  const visibleNavigationChanges = createMemo(() => {
+    if (!showNavigationChanges.value) return []
+
+    const range = visibleRange()
+
+    if (!range) return []
+
+    return callsStore.navigationChanges.filter(
+      (navigation) =>
+        navigation.time >= range.start && navigation.time <= range.end,
+    )
+  })
+
   function fracInRange(time: number): number {
     const range = visibleRange()
 
@@ -589,53 +642,72 @@ export const TimelineViewPage = () => {
     )}px) * ${fracInRange(marker.time)})`
   }
 
+  function navigationLeftStyle(navigation: NavigationChange): string {
+    return `calc(${String(labelColumnWidth)}px + (100% - ${String(
+      labelColumnWidth,
+    )}px) * ${fracInRange(navigation.time)})`
+  }
+
   return (
     <div class={containerStyle}>
       <h1>timeline</h1>
+
+      <div class={controlsStyle}>
+        <label class="search">
+          <Icon name="search" />
+          <input
+            type="text"
+            placeholder="Search"
+            value={search.value}
+            onInput={(e) => {
+              search.value = e.currentTarget.value
+            }}
+          />
+        </label>
+
+        <ButtonElement
+          onClick={() => typeFilter.set('all')}
+          classList={{ active: typeFilter.value === 'all' }}
+        >
+          All
+        </ButtonElement>
+        <ButtonElement
+          onClick={() => typeFilter.set('api')}
+          classList={{ active: typeFilter.value === 'api' }}
+        >
+          API
+        </ButtonElement>
+        <ButtonElement
+          onClick={() => typeFilter.set('ws')}
+          classList={{ active: typeFilter.value === 'ws' }}
+        >
+          WebSocket
+        </ButtonElement>
+        <ButtonElement
+          onClick={() => typeFilter.set('error')}
+          classList={{ active: typeFilter.value === 'error' }}
+        >
+          Errors
+        </ButtonElement>
+        <ButtonElement
+          classList={{ active: showNavigationChanges.value }}
+          title={
+            showNavigationChanges.value
+              ? 'Hide navigation changes in timelines'
+              : 'Show navigation changes in timelines'
+          }
+          onClick={() => {
+            showNavigationChanges.value = !showNavigationChanges.value
+          }}
+        >
+          Navigation
+        </ButtonElement>
+      </div>
 
       {!domain() ? (
         <div class="empty">no requests tracked yet</div>
       ) : (
         <>
-          <div class={controlsStyle}>
-            <label class="search">
-              <Icon name="search" />
-              <input
-                type="text"
-                placeholder="Search"
-                value={search.value}
-                onInput={(e) => {
-                  search.value = e.currentTarget.value
-                }}
-              />
-            </label>
-
-            <ButtonElement
-              onClick={() => typeFilter.set('all')}
-              classList={{ active: typeFilter.value === 'all' }}
-            >
-              All
-            </ButtonElement>
-            <ButtonElement
-              onClick={() => typeFilter.set('api')}
-              classList={{ active: typeFilter.value === 'api' }}
-            >
-              API
-            </ButtonElement>
-            <ButtonElement
-              onClick={() => typeFilter.set('ws')}
-              classList={{ active: typeFilter.value === 'ws' }}
-            >
-              WebSocket
-            </ButtonElement>
-            <ButtonElement
-              onClick={() => typeFilter.set('error')}
-              classList={{ active: typeFilter.value === 'error' }}
-            >
-              Errors
-            </ButtonElement>
-          </div>
-
           <div
             class={brushStyle}
             ref={brushEl}
@@ -666,6 +738,21 @@ export const TimelineViewPage = () => {
                 <div
                   class="tick marker"
                   style={{ left: `${fracInDomain(marker.time) * 100}%` }}
+                />
+              )}
+            </For>
+
+            <For
+              each={
+                showNavigationChanges.value
+                  ? callsStore.navigationChanges
+                  : []
+              }
+            >
+              {(navigation) => (
+                <div
+                  class="tick navigation"
+                  style={{ left: `${fracInDomain(navigation.time) * 100}%` }}
                 />
               )}
             </For>
@@ -796,6 +883,23 @@ export const TimelineViewPage = () => {
                     >
                       {marker.label}
                     </button>
+                  </div>
+                )}
+              </For>
+
+              <For each={visibleNavigationChanges()}>
+                {(navigation) => (
+                  <div
+                    class="navigation-line"
+                    style={{ left: navigationLeftStyle(navigation) }}
+                  >
+                    <span
+                      title={`${navigation.from} → ${navigation.to} · ${dayjs(
+                        navigation.time,
+                      ).format('HH:mm:ss.SSS')}`}
+                    >
+                      Navigation · {navigation.to}
+                    </span>
                   </div>
                 )}
               </For>

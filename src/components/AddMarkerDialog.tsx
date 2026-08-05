@@ -6,6 +6,8 @@ import {
   callsStore,
   clearMarkersAfter,
   clearMarkersBefore,
+  clearNavigationChangesAfter,
+  clearNavigationChangesBefore,
   clearRequestsAfter,
   clearRequestsBefore,
   removeMarker,
@@ -163,6 +165,7 @@ export const AddMarkerDialog = () => {
     clearRequestsBefore(marker.time)
     clearLogsBefore(marker.time)
     clearMarkersBefore(marker.time)
+    clearNavigationChangesBefore(marker.time)
     showToast('History before marker cleared')
     close()
   }
@@ -173,6 +176,7 @@ export const AddMarkerDialog = () => {
     clearRequestsAfter(marker.time)
     clearLogsAfter(marker.time)
     clearMarkersAfter(marker.time)
+    clearNavigationChangesAfter(marker.time)
     showToast('History after marker cleared')
     close()
   }
