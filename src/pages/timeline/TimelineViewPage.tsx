@@ -125,6 +125,10 @@ const brushStyle = css`
       background: ${colors.secondary.alpha(0.6)};
       pointer-events: none;
 
+      &.ws {
+        background: ${colors.primary.alpha(0.8)};
+      }
+
       &.warning {
         background: ${colors.warning.alpha(0.8)};
       }
@@ -721,6 +725,7 @@ export const TimelineViewPage = () => {
                 <div
                   class="tick"
                   classList={{
+                    ws: row.request.type === 'ws',
                     error: row.request.isError,
                     warning:
                       !row.request.isError && !!row.request.warnings?.length,
@@ -898,7 +903,7 @@ export const TimelineViewPage = () => {
                         navigation.time,
                       ).format('HH:mm:ss.SSS')}`}
                     >
-                      Navigation · {navigation.to}
+                      {navigation.to}
                     </span>
                   </div>
                 )}

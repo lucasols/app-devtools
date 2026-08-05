@@ -307,7 +307,7 @@ export const Timeline = () => {
                   ).format('HH:mm:ss.SSS')}`}
                 >
                   <span>
-                    Navigation · {item.navigation.to} ·{' '}
+                    {item.navigation.to} ·{' '}
                     {dayjs(item.navigation.time).format('HH:mm:ss')}
                   </span>
                 </div>
