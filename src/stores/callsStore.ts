@@ -452,7 +452,10 @@ export type Config = {
       type: RequestTypes
       subType?: RequestSubTypes
     }) => string
+    /** evaluated when the request is registered */
     payloadAlias?: (payload: any, request: ApiRequest) => string
+    /** evaluated after response storage; a non-empty value overrides payloadAlias */
+    responseAlias?: (response: any, request: ApiRequest) => string
   }[]
   /**
    * request header values are masked in the ui by default (replaced by type
@@ -581,6 +584,7 @@ export function addCall(request: {
 
   const requestID = nanoid()
   let requestCallID: string | null = null
+  let relatedConfig: Config['callsProcessor'][number] | undefined
 
   setCallsStore(
     produce((draft) => {
@@ -597,7 +601,7 @@ export function addCall(request: {
 
       let pathParams: Record<string, string | null> | null = null
 
-      const relatedConfig = config.callsProcessor.find((processor) => {
+      relatedConfig = config.callsProcessor.find((processor) => {
         if (typeof processor.match === 'string') {
           if (processor.matchType && processor.matchType !== request.type) {
             return false
@@ -756,6 +760,18 @@ export function addCall(request: {
         pendingRequest.code = status
         pendingRequest.response = klona(response)
         pendingRequest.metadata = klona(metadata)
+
+        const responseAlias = tryExpression(() =>
+          relatedConfig?.responseAlias?.(
+            pendingRequest.response,
+            pendingRequest,
+          ),
+        )
+
+        if (responseAlias) {
+          pendingRequest.alias = responseAlias
+        }
+
         pendingRequest.approxSize +=
           approxJsonSize(response) + approxJsonSize(metadata)
         pendingRequest.tags = filterNonNullableElements(
