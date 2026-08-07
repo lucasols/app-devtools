@@ -96,6 +96,7 @@ const selectedTab = createSignalRef<'api' | 'ws' | 'all'>('api')
 export const ApiExplorerMenu = () => {
   const search = createSignalRef('')
   const listIsHovered = createSignalRef(false)
+  const expandedItems = createSignalRef(new Map<string, boolean>())
 
   // order of the last unfrozen sort, used to keep the list stable while the
   // mouse is over it so items don't move under the cursor
@@ -227,11 +228,22 @@ export const ApiExplorerMenu = () => {
       >
         <For each={menuItems()}>
           {(item, i) => {
+            const isExpanded = () =>
+              expandedItems.value.get(item.id) ??
+              item.subitemsWithAlias.length < 4
+
             return (
               <ApiExplorerMenuItem
                 index={i()}
                 item={item}
                 currentCallId={currentCallId}
+                expanded={isExpanded()}
+                onToggleExpanded={() => {
+                  const nextExpandedItems = new Map(expandedItems.value)
+
+                  nextExpandedItems.set(item.id, !isExpanded())
+                  expandedItems.value = nextExpandedItems
+                }}
               />
             )
           }}

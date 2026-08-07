@@ -6,7 +6,6 @@ import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors } from '@src/style/theme'
-import { createSignalRef } from '@utils/solid'
 import { css } from 'solid-styled-components'
 import { getTypeTag, typeTagStyle } from './typeTag'
 
@@ -85,7 +84,9 @@ const menuItemStyle = css`
 type ApiExplorerMenuItemProps = {
   index: number
   currentCallId: string | null
+  expanded: boolean
   item: MenuItem
+  onToggleExpanded: () => void
 }
 
 export type MenuItem = ApiCall & {
@@ -96,8 +97,7 @@ export type MenuItem = ApiCall & {
 export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
   const item = $(props.item)
   const currentCallId = $(props.currentCallId)
-
-  const showSubitems = createSignalRef(props.item.subitemsWithAlias.length < 4)
+  const expanded = $(props.expanded)
 
   const typeTag = getTypeTag({
     type: props.item.type,
@@ -139,18 +139,16 @@ export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
           <ButtonElement
             class="expand-button"
             classList={{
-              expanded: showSubitems.value,
+              expanded,
             }}
-            onClick={() => {
-              showSubitems.value = !showSubitems.value
-            }}
+            onClick={() => props.onToggleExpanded()}
           >
             <Icon name="caret-down" />
           </ButtonElement>
         )}
       </div>
 
-      <Show when={showSubitems.value}>
+      <Show when={expanded}>
         <For each={item.subitemsWithAlias}>
           {(subitem) => (
             <ButtonElement
