@@ -18,8 +18,9 @@ import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
 import { formatNum } from '@src/utils/formatNum'
 import { reverseCopy } from '@utils/arrayUtils'
+import { createSignalRef } from '@utils/solid'
 import dayjs from 'dayjs'
-import { createMemo } from 'solid-js'
+import { createMemo, onCleanup, onMount } from 'solid-js'
 import { css } from 'solid-styled-components'
 import { getRequestPayload } from './getRequestPayload'
 import { getTypeTag, typeTagStyle } from './typeTag'
@@ -59,9 +60,20 @@ const containerStyle = css`
 
 const itemsContainerStyle = css`
   &&& {
-    ${stack()};
+    position: relative;
     flex: 1 1;
     overflow-y: auto;
+
+    > .virtual-content {
+      position: relative;
+      width: 100%;
+    }
+
+    .virtual-window {
+      position: absolute;
+      inset: 0 0 auto;
+      ${stack()};
+    }
   }
 `
 
@@ -69,6 +81,8 @@ const requestItemStyle = css`
   &&& {
     font-size: 13px;
     ${stack()};
+    height: 32px;
+    flex-shrink: 0;
 
     &.warning {
       color: ${colors.warning.var};
@@ -135,6 +149,8 @@ const markerItemStyle = css`
     font-size: 12px;
     color: ${colors.warning.var};
     font-family: ${fonts.decorative};
+    height: 32px;
+    flex-shrink: 0;
 
     &::before,
     &::after {
@@ -157,6 +173,8 @@ const navigationItemStyle = css`
     font-size: 12px;
     color: ${colors.secondary.var};
     font-family: ${fonts.decorative};
+    height: 32px;
+    flex-shrink: 0;
 
     &::before,
     &::after {
@@ -190,8 +208,31 @@ type TimelineItem =
       time: number
     }
 
+const timelineItemHeight = 32
+const timelineOverscan = 8
+
 export const Timeline = () => {
-  const selectedCall = createMemo(() => {
+  const scrollTop = createSignalRef(0)
+  const viewportHeight = createSignalRef(0)
+  let itemsContainer: HTMLDivElement | undefined
+
+  onMount(() => {
+    const container = itemsContainer
+
+    if (!container) return
+
+    const updateViewportHeight = () => {
+      viewportHeight.value = container.clientHeight
+    }
+
+    const resizeObserver = new window.ResizeObserver(updateViewportHeight)
+
+    resizeObserver.observe(container)
+    updateViewportHeight()
+    onCleanup(() => resizeObserver.disconnect())
+  })
+
+  function getSelectedCall() {
     const selectedCallId = uiStore.selectedCall
 
     if (!selectedCallId) {
@@ -205,10 +246,10 @@ export const Timeline = () => {
     }
 
     return null
-  })
+  }
 
   const requests = createMemo(() => {
-    const reversed = reverseCopy(selectedCall()?.requests)
+    const reversed = reverseCopy(getSelectedCall()?.requests)
     return reversed.length === 0 ? null : reversed
   })
 
@@ -251,6 +292,27 @@ export const Timeline = () => {
     return items.sort((a, b) => b.time - a.time)
   })
 
+  const virtualTimeline = createMemo(() => {
+    const items = timelineItems() ?? []
+    const visibleCount =
+      Math.ceil(viewportHeight.value / timelineItemHeight) +
+      timelineOverscan * 2
+    const start = Math.min(
+      Math.max(
+        0,
+        Math.floor(scrollTop.value / timelineItemHeight) - timelineOverscan,
+      ),
+      Math.max(0, items.length - visibleCount),
+    )
+    const end = Math.min(items.length, start + visibleCount)
+
+    return {
+      items: items.slice(start, end),
+      offset: start * timelineItemHeight,
+      totalHeight: items.length * timelineItemHeight,
+    }
+  })
+
   const selectedRequestId = $(
     uiStore.selectedRequest || filteredRequests()?.[0]?.id,
   )
@@ -275,9 +337,23 @@ export const Timeline = () => {
         </ButtonElement>
       </div>
 
-      <div class={itemsContainerStyle}>
+      <div
+        class={itemsContainerStyle}
+        ref={itemsContainer}
+        onScroll={(event) => {
+          scrollTop.value = event.currentTarget.scrollTop
+        }}
+      >
+        <div
+          class="virtual-content"
+          style={{ height: `${virtualTimeline().totalHeight}px` }}
+        >
+          <div
+            class="virtual-window"
+            style={{ transform: `translateY(${virtualTimeline().offset}px)` }}
+          >
         <For
-          each={timelineItems()}
+          each={virtualTimeline().items}
           fallback={<div class={emptyStateStyle}>no requests found</div>}
         >
           {(item) => {
@@ -383,6 +459,8 @@ export const Timeline = () => {
             )
           }}
         </For>
+          </div>
+        </div>
       </div>
     </div>
   )

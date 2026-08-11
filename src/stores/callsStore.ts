@@ -12,8 +12,7 @@ import {
 } from '@src/utils/getUnusedResponseData'
 import { klona } from 'klona/json'
 import { nanoid } from 'nanoid'
-import { batch } from 'solid-js'
-import { createStore, produce } from 'solid-js/store'
+import { batch, createSignal } from 'solid-js'
 import { recordingIsPaused } from '@src/stores/recordingStore'
 
 export type {
@@ -104,11 +103,44 @@ type State = {
   navigationChanges: NavigationChange[]
 }
 
-export const [callsStore, setCallsStore] = createStore<State>({
+const callsState: State = {
   calls: {},
   markers: [],
   navigationChanges: [],
-})
+}
+
+let storedRequestsSize = 0
+let storedRequestsCount = 0
+let retainedRequests = new WeakSet<ApiRequest>()
+
+const [callsStoreRevision, setCallsStoreRevision] = createSignal(0)
+
+/**
+ * Public reactive view of the plain history state. Reading a top-level field
+ * tracks one coarse revision signal; nested history data remains unproxied.
+ */
+export const callsStore: State = {
+  get calls() {
+    callsStoreRevision()
+    return callsState.calls
+  },
+  get markers() {
+    callsStoreRevision()
+    return callsState.markers
+  },
+  get navigationChanges() {
+    callsStoreRevision()
+    return callsState.navigationChanges
+  },
+}
+
+function updateCallsState(update: (state: State) => boolean | void) {
+  batch(() => {
+    if (update(callsState) === false) return
+
+    setCallsStoreRevision((revision) => revision + 1)
+  })
+}
 
 export function addNavigationChange(
   from: string,
@@ -117,69 +149,75 @@ export function addNavigationChange(
 ) {
   if (recordingIsPaused.value || from === to) return
 
-  setCallsStore(
-    produce((draft) => {
-      draft.navigationChanges.push({ id: nanoid(), from, to, time })
-    }),
-  )
+  updateCallsState((state) => {
+    state.navigationChanges.push({ id: nanoid(), from, to, time })
+  })
 }
 
 export function addMarker(label?: string, time?: number) {
-  setCallsStore(
-    produce((draft) => {
-      draft.markers.push({
-        id: nanoid(),
-        label: label || `Marker ${draft.markers.length + 1}`,
-        time: time ?? Date.now(),
-      })
-    }),
-  )
+  updateCallsState((state) => {
+    state.markers.push({
+      id: nanoid(),
+      label: label || `Marker ${state.markers.length + 1}`,
+      time: time ?? Date.now(),
+    })
+  })
 }
 
 export function removeMarker(id: string) {
-  setCallsStore(
-    produce((draft) => {
-      draft.markers = draft.markers.filter((marker) => marker.id !== id)
-    }),
-  )
+  updateCallsState((state) => {
+    state.markers = state.markers.filter((marker) => marker.id !== id)
+  })
 }
 
 export function renameMarker(id: string, label: string) {
-  setCallsStore(
-    'markers',
-    (marker) => marker.id === id,
-    'label',
-    label,
-  )
+  updateCallsState((state) => {
+    const markerIndex = state.markers.findIndex((item) => item.id === id)
+    const marker = state.markers[markerIndex]
+
+    if (!marker) return false
+
+    state.markers[markerIndex] = { ...marker, label }
+    return true
+  })
 }
 
 export function clearMarkersBefore(time: number) {
-  setCallsStore('markers', (markers) =>
-    markers.filter((marker) => marker.time >= time),
-  )
+  updateCallsState((state) => {
+    state.markers = state.markers.filter((marker) => marker.time >= time)
+  })
 }
 
 export function clearMarkersAfter(time: number) {
-  setCallsStore('markers', (markers) =>
-    markers.filter((marker) => marker.time <= time),
-  )
+  updateCallsState((state) => {
+    state.markers = state.markers.filter((marker) => marker.time <= time)
+  })
 }
 
 export function clearNavigationChangesBefore(time: number) {
-  setCallsStore('navigationChanges', (navigationChanges) =>
-    navigationChanges.filter((navigation) => navigation.time >= time),
-  )
+  updateCallsState((state) => {
+    state.navigationChanges = state.navigationChanges.filter(
+      (navigation) => navigation.time >= time,
+    )
+  })
 }
 
 export function clearNavigationChangesAfter(time: number) {
-  setCallsStore('navigationChanges', (navigationChanges) =>
-    navigationChanges.filter((navigation) => navigation.time <= time),
-  )
+  updateCallsState((state) => {
+    state.navigationChanges = state.navigationChanges.filter(
+      (navigation) => navigation.time <= time,
+    )
+  })
 }
 
 export function clearHistory() {
-  batch(() => {
-    setCallsStore({ calls: {}, markers: [], navigationChanges: [] })
+  updateCallsState((state) => {
+    state.calls = {}
+    state.markers = []
+    state.navigationChanges = []
+    storedRequestsSize = 0
+    storedRequestsCount = 0
+    retainedRequests = new WeakSet()
     lastAddedCallID.value = ''
   })
 }
@@ -192,22 +230,28 @@ function requestEndTimeOrInfinity(request: ApiRequest): number {
 }
 
 function removeRequests(shouldRemove: (request: ApiRequest) => boolean) {
-  batch(() => {
-    setCallsStore(
-      produce((draft) => {
-        for (const [callID, call] of Object.entries(draft.calls)) {
-          call.requests = call.requests.filter(
-            (request) => !shouldRemove(request),
-          )
+  updateCallsState((state) => {
+    for (const [callID, call] of Object.entries(state.calls)) {
+      const remainingRequests: ApiRequest[] = []
 
-          if (call.requests.length === 0) {
-            delete draft.calls[callID]
-          }
+      for (const request of call.requests) {
+        if (shouldRemove(request)) {
+          storedRequestsSize -= request.approxSize
+          storedRequestsCount--
+          retainedRequests.delete(request)
+        } else {
+          remainingRequests.push(request)
         }
-      }),
-    )
+      }
 
-    if (!callsStore.calls[lastAddedCallID.value]) {
+      call.requests = remainingRequests
+
+      if (call.requests.length === 0) {
+        delete state.calls[callID]
+      }
+    }
+
+    if (!state.calls[lastAddedCallID.value]) {
       lastAddedCallID.value = ''
     }
   })
@@ -390,20 +434,9 @@ const requestBaseSize = 500
 function evictOldRequestsIfNeeded(draft: State) {
   const maxTotalSize = config.maxRequestsSizeMb * 1024 * 1024
 
-  let totalRequests = 0
-  let totalSize = 0
-
-  for (const call of Object.values(draft.calls)) {
-    totalRequests += call.requests.length
-
-    for (const callRequest of call.requests) {
-      totalSize += callRequest.approxSize
-    }
-  }
-
   // always keep at least the newest request, even if it alone exceeds the
   // budget
-  while (totalSize > maxTotalSize && totalRequests > 1) {
+  while (storedRequestsSize > maxTotalSize && storedRequestsCount > 1) {
     let oldestCallID: string | null = null
     let oldestStartTime = Infinity
 
@@ -424,8 +457,11 @@ function evictOldRequestsIfNeeded(draft: State) {
 
     const evictedRequest = oldestCall.requests.shift()
 
-    totalRequests--
-    totalSize -= evictedRequest ? evictedRequest.approxSize : 0
+    if (evictedRequest) {
+      storedRequestsCount--
+      storedRequestsSize -= evictedRequest.approxSize
+      retainedRequests.delete(evictedRequest)
+    }
 
     if (oldestCall.requests.length === 0) {
       delete draft.calls[oldestCallID]
@@ -583,11 +619,10 @@ export function addCall(request: {
   const startTime = request.startTime || Date.now()
 
   const requestID = nanoid()
-  let requestCallID: string | null = null
+  let registeredRequest: ApiRequest | null = null
   let relatedConfig: Config['callsProcessor'][number] | undefined
 
-  setCallsStore(
-    produce((draft) => {
+  updateCallsState((state) => {
       const pathURL = tryExpression(
         () => new URL(request.path, 'http://localhost'),
       )
@@ -659,12 +694,10 @@ export function addCall(request: {
           }`,
       )
 
-      requestCallID = callID
-
       const callNameNormalizer = relatedConfig?.callName
 
-      if (!draft.calls[callID]) {
-        draft.calls[callID] = {
+      if (!state.calls[callID]) {
+        state.calls[callID] = {
           name: (
             callNameNormalizer ||
             (typeof relatedConfig?.match === 'string' && relatedConfig.match) ||
@@ -681,7 +714,7 @@ export function addCall(request: {
         lastAddedCallID.value = callID
       }
 
-      const call = draft.calls[callID]
+      const call = state.calls[callID]
 
       assertIsNotNullish(call)
 
@@ -719,10 +752,13 @@ export function addCall(request: {
       }
 
       call.requests.push(requestToAdd)
+      registeredRequest = requestToAdd
+      retainedRequests.add(requestToAdd)
+      storedRequestsCount++
+      storedRequestsSize += requestToAdd.approxSize
 
-      evictOldRequestsIfNeeded(draft)
-    }),
-  )
+      evictOldRequestsIfNeeded(state)
+    })
 
   return ({
     isError,
@@ -743,16 +779,13 @@ export function addCall(request: {
   }) => {
     const duration = request.duration || Date.now() - startTime
 
-    setCallsStore(
-      produce((draft) => {
-        const call = requestCallID ? draft.calls[requestCallID] : undefined
-
+    updateCallsState((state) => {
         // the request may have been evicted or cleared in the meantime
-        const pendingRequest = call?.requests.find(
-          (callRequest) => callRequest.id === requestID,
-        )
+        const pendingRequest = registeredRequest
 
-        if (!pendingRequest) return
+        if (!pendingRequest || !retainedRequests.has(pendingRequest)) {
+          return false
+        }
 
         pendingRequest.status = isError ? 'error' : 'success'
         pendingRequest.isError = isError
@@ -772,8 +805,11 @@ export function addCall(request: {
           pendingRequest.alias = responseAlias
         }
 
-        pendingRequest.approxSize +=
+        const additionalSize =
           approxJsonSize(response) + approxJsonSize(metadata)
+
+        pendingRequest.approxSize += additionalSize
+        storedRequestsSize += additionalSize
         pendingRequest.tags = filterNonNullableElements(
           concatNonNullable(pendingRequest.tags, tags),
         )
@@ -791,9 +827,9 @@ export function addCall(request: {
             : undefined
         }
 
-        evictOldRequestsIfNeeded(draft)
-      }),
-    )
+        evictOldRequestsIfNeeded(state)
+        return true
+      })
   }
 }
 

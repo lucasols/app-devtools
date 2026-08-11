@@ -385,8 +385,25 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 const maxVisibleRows = 400
+const brushBucketCount = 512
 
 type TypeFilter = 'all' | 'api' | 'ws' | 'error'
+type BrushTickKind = 'request' | 'ws' | 'warning' | 'error' | 'pending'
+
+type BrushTick = {
+  bucket: number
+  kind: BrushTickKind
+  priority: number
+}
+
+function getBrushTick(request: ApiRequest): Omit<BrushTick, 'bucket'> {
+  if (request.isError) return { kind: 'error', priority: 5 }
+  if (request.warnings?.length) return { kind: 'warning', priority: 4 }
+  if (request.status === 'pending') return { kind: 'pending', priority: 3 }
+  if (request.type === 'ws') return { kind: 'ws', priority: 2 }
+
+  return { kind: 'request', priority: 1 }
+}
 
 export const TimelineViewPage = () => {
   const search = createSignalRef('')
@@ -472,6 +489,35 @@ export const TimelineViewPage = () => {
     if (min === Infinity) return null
 
     return { start: min, end: Math.max(max, min + 100) }
+  })
+
+  const brushTicks = createMemo((): BrushTick[] => {
+    const fullDomain = domain()
+
+    if (!fullDomain) return []
+
+    const duration = fullDomain.end - fullDomain.start
+    const buckets = new Map<number, BrushTick>()
+
+    for (const row of filteredRows()) {
+      const fraction = clamp(
+        (row.request.startTime - fullDomain.start) / duration,
+        0,
+        1,
+      )
+      const bucket = Math.min(
+        brushBucketCount - 1,
+        Math.floor(fraction * brushBucketCount),
+      )
+      const tick = getBrushTick(row.request)
+      const existing = buckets.get(bucket)
+
+      if (!existing || tick.priority > existing.priority) {
+        buckets.set(bucket, { bucket, ...tick })
+      }
+    }
+
+    return [...buckets.values()].sort((a, b) => a.bucket - b.bucket)
   })
 
   // selection is stored in absolute time so it stays put while the
@@ -720,19 +766,18 @@ export const TimelineViewPage = () => {
             onPointerUp={onBrushPointerUp}
             title="Drag to filter a time range, click to reset"
           >
-            <For each={filteredRows()}>
-              {(row) => (
+            <For each={brushTicks()}>
+              {(tick) => (
                 <div
                   class="tick"
                   classList={{
-                    ws: row.request.type === 'ws',
-                    error: row.request.isError,
-                    warning:
-                      !row.request.isError && !!row.request.warnings?.length,
-                    pending: row.request.status === 'pending',
+                    ws: tick.kind === 'ws',
+                    error: tick.kind === 'error',
+                    warning: tick.kind === 'warning',
+                    pending: tick.kind === 'pending',
                   }}
                   style={{
-                    left: `${fracInDomain(row.request.startTime) * 100}%`,
+                    left: `${(tick.bucket / (brushBucketCount - 1)) * 100}%`,
                   }}
                 />
               )}

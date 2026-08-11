@@ -1,7 +1,7 @@
 import { approxJsonSize } from '@utils/approxJsonSize'
 import { klona } from 'klona/json'
 import { nanoid } from 'nanoid'
-import { createStore, produce } from 'solid-js/store'
+import { createSignal } from 'solid-js'
 import { recordingIsPaused } from '@src/stores/recordingStore'
 
 export type LogSeverity = 'error' | 'warning' | 'info'
@@ -30,41 +30,56 @@ const logBaseSize = 100
 /** generous default limit to avoid memory issues in long-running sessions */
 let maxLogsSizeMb = 10
 
-export function setMaxLogsSizeMb(limit: number) {
-  maxLogsSizeMb = limit
+const logsState: State = { logs: [] }
+let storedLogsSize = 0
 
-  setLogsStore(produce(evictOldLogsIfNeeded))
+const [logsStoreRevision, setLogsStoreRevision] = createSignal(0)
+
+/** Reactive top-level view over plain, non-proxied log records. */
+export const logsStore: State = {
+  get logs() {
+    logsStoreRevision()
+    return logsState.logs
+  },
 }
 
-function evictOldLogsIfNeeded(draft: State) {
+function updateLogsState(update: (state: State) => void) {
+  update(logsState)
+  setLogsStoreRevision((revision) => revision + 1)
+}
+
+export function setMaxLogsSizeMb(limit: number) {
+  maxLogsSizeMb = limit
+  updateLogsState(evictOldLogsIfNeeded)
+}
+
+function evictOldLogsIfNeeded(state: State) {
   const maxTotalSize = maxLogsSizeMb * 1024 * 1024
-
-  let totalSize = 0
-
-  for (const log of draft.logs) {
-    totalSize += log.approxSize
-  }
 
   let evictCount = 0
 
   // always keep at least the newest log, even if it alone exceeds the budget
-  while (totalSize > maxTotalSize && evictCount < draft.logs.length - 1) {
-    const oldestLog = draft.logs[evictCount]
+  while (
+    storedLogsSize > maxTotalSize &&
+    evictCount < state.logs.length - 1
+  ) {
+    const oldestLog = state.logs[evictCount]
 
     if (!oldestLog) break
 
-    totalSize -= oldestLog.approxSize
+    storedLogsSize -= oldestLog.approxSize
     evictCount++
   }
 
   if (evictCount > 0) {
-    draft.logs.splice(0, evictCount)
+    state.logs.splice(0, evictCount)
   }
 }
 
-export const [logsStore, setLogsStore] = createStore<State>({
-  logs: [],
-})
+function replaceLogs(logs: DevtoolsLog[]) {
+  logsState.logs = logs
+  storedLogsSize = logs.reduce((total, log) => total + log.approxSize, 0)
+}
 
 export function addLog(log: {
   message: string
@@ -75,38 +90,44 @@ export function addLog(log: {
 }) {
   if (recordingIsPaused.value) return
 
-  setLogsStore(
-    produce((draft) => {
-      draft.logs.push({
-        id: nanoid(),
-        severity: log.severity || 'info',
-        message: log.message,
-        category: log.category,
-        details: log.details === undefined ? undefined : klona(log.details),
-        time: log.time || Date.now(),
-        approxSize:
-          logBaseSize + log.message.length + approxJsonSize(log.details),
-      })
+  updateLogsState((state) => {
+    const logToAdd: DevtoolsLog = {
+      id: nanoid(),
+      severity: log.severity || 'info',
+      message: log.message,
+      category: log.category,
+      details: log.details === undefined ? undefined : klona(log.details),
+      time: log.time || Date.now(),
+      approxSize:
+        logBaseSize + log.message.length + approxJsonSize(log.details),
+    }
 
-      evictOldLogsIfNeeded(draft)
-    }),
-  )
+    state.logs.push(logToAdd)
+    storedLogsSize += logToAdd.approxSize
+    evictOldLogsIfNeeded(state)
+  })
 }
 
 export function clearLogs() {
-  setLogsStore({ logs: [] })
+  updateLogsState(() => replaceLogs([]))
 }
 
 export function clearLogsBefore(time: number) {
-  setLogsStore('logs', (logs) => logs.filter((log) => log.time >= time))
+  updateLogsState((state) => {
+    replaceLogs(state.logs.filter((log) => log.time >= time))
+  })
 }
 
 export function clearLogsAfter(time: number) {
-  setLogsStore('logs', (logs) => logs.filter((log) => log.time <= time))
+  updateLogsState((state) => {
+    replaceLogs(state.logs.filter((log) => log.time <= time))
+  })
 }
 
 export function removeLog(id: string) {
-  setLogsStore('logs', (logs) => logs.filter((log) => log.id !== id))
+  updateLogsState((state) => {
+    replaceLogs(state.logs.filter((log) => log.id !== id))
+  })
 }
 
 export function getLogExportEntry(
