@@ -16,6 +16,7 @@ import { ellipsis } from '@src/style/helpers/ellipsis'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { colors, fonts } from '@src/style/theme'
+import { copyToClipboard } from '@src/utils/copyToClipboard'
 import { formatNum } from '@src/utils/formatNum'
 import { reverseCopy } from '@utils/arrayUtils'
 import { createSignalRef } from '@utils/solid'
@@ -376,17 +377,25 @@ export const Timeline = () => {
 
             if (item.itemType === 'navigation') {
               return (
-                <div
+                <ButtonElement
                   class={navigationItemStyle}
                   title={`${item.navigation.from} → ${item.navigation.to} · ${dayjs(
                     item.navigation.time,
-                  ).format('HH:mm:ss.SSS')}`}
+                  ).format('HH:mm:ss.SSS')} · click to copy`}
+                  onClick={() => {
+                    void copyToClipboard({
+                      from: item.navigation.from,
+                      to: item.navigation.to,
+                      time: item.navigation.time,
+                      timeISO: new Date(item.navigation.time).toISOString(),
+                    })
+                  }}
                 >
                   <span>
                     {item.navigation.to} ·{' '}
                     {dayjs(item.navigation.time).format('HH:mm:ss')}
                   </span>
-                </div>
+                </ButtonElement>
               )
             }
 

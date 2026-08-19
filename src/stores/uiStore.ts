@@ -5,7 +5,7 @@ import { createStore } from 'solid-js/store'
 export const showSensitiveValues = createSignalRef(false)
 
 /** shows captured browser route changes in request timelines */
-export const showNavigationChanges = createSignalRef(false)
+export const showNavigationChanges = createSignalRef(true)
 
 export type DevtoolsPage = 'explorer' | 'timeline' | 'stats' | 'logs' | 'caller'
 
