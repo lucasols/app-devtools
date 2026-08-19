@@ -47,6 +47,7 @@ export const ApiExplorerPage = () => {
     if (lastLoaded) {
       setUiStore({
         selectedCall: lastLoaded.callID,
+        selectedCallIds: [lastLoaded.callID],
         selectedRequest: lastLoaded.requestID,
       })
     }

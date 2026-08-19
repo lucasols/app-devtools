@@ -84,6 +84,7 @@ const menuItemStyle = css`
 type ApiExplorerMenuItemProps = {
   index: number
   currentCallId: string | null
+  selectedCallIds: string[]
   expanded: boolean
   item: MenuItem
   onToggleExpanded: () => void
@@ -97,6 +98,7 @@ export type MenuItem = ApiCall & {
 export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
   const item = $(props.item)
   const currentCallId = $(props.currentCallId)
+  const selectedCallIds = $(props.selectedCallIds)
   const expanded = $(props.expanded)
 
   const typeTag = getTypeTag({
@@ -110,13 +112,22 @@ export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
       <div
         class="call"
         classList={{
-          selected: currentCallId === item.id,
+          selected: selectedCallIds.includes(item.id),
         }}
       >
         <ButtonElement
-          onClick={() => {
+          title="Shift + Click to add or remove this endpoint from the selection"
+          onClick={(event) => {
+            const selected = selectedCallIds.includes(item.id)
+            const nextSelectedCallIds = event.shiftKey
+              ? selected
+                ? selectedCallIds.filter((callId) => callId !== item.id)
+                : [...selectedCallIds, item.id]
+              : [item.id]
+
             setUiStore({
               selectedCall: item.id,
+              selectedCallIds: nextSelectedCallIds,
               selectedSubitem: null,
               // pin the last loaded request at click time so the details
               // don't auto-switch when new requests arrive
@@ -161,6 +172,7 @@ export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
               onClick={() => {
                 setUiStore({
                   selectedCall: item.id,
+                  selectedCallIds: [item.id],
                   selectedSubitem: subitem,
                   selectedRequest: getLastLoadedRequestId(item, subitem),
                 })

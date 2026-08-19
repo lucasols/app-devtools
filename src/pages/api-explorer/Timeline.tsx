@@ -5,7 +5,6 @@ import {
   NavigationChange,
   TimelineMarker,
   callsStore,
-  lastAddedCallID,
 } from '@src/stores/callsStore'
 import {
   setUiStore,
@@ -201,7 +200,12 @@ const emptyStateStyle = css`
 `
 
 type TimelineItem =
-  | { itemType: 'request'; request: ApiRequest; time: number }
+  | {
+      itemType: 'request'
+      callID: string
+      request: ApiRequest
+      time: number
+    }
   | { itemType: 'marker'; marker: TimelineMarker; time: number }
   | {
       itemType: 'navigation'
@@ -211,6 +215,11 @@ type TimelineItem =
 
 const timelineItemHeight = 32
 const timelineOverscan = 8
+
+type TimelineRequest = {
+  callID: string
+  request: ApiRequest
+}
 
 export const Timeline = () => {
   const scrollTop = createSignalRef(0)
@@ -233,31 +242,43 @@ export const Timeline = () => {
     onCleanup(() => resizeObserver.disconnect())
   })
 
-  function getSelectedCall() {
-    const selectedCallId = uiStore.selectedCall
-
-    if (!selectedCallId) {
-      const callsEntries = callsStore.calls[lastAddedCallID.value]
-
-      return callsEntries || null
-    }
-
-    if (selectedCallId) {
-      return callsStore.calls[selectedCallId]
-    }
-
-    return null
-  }
-
   const requests = createMemo(() => {
-    const reversed = reverseCopy(getSelectedCall()?.requests)
-    return reversed.length === 0 ? null : reversed
+    const items: TimelineRequest[] = []
+    const selectedCallIds = uiStore.selectedCallIds
+
+    const calls =
+      selectedCallIds.length > 0
+        ? selectedCallIds.flatMap((callID) => {
+            const call = callsStore.calls[callID]
+            return call ? [{ callID, call }] : []
+          })
+        : Object.entries(callsStore.calls)
+            .filter(([, call]) => {
+              if (uiStore.apiExplorerMenuTab === 'api') {
+                return call.type === 'fetch' || call.type === 'mutation'
+              }
+
+              if (uiStore.apiExplorerMenuTab === 'ws') {
+                return call.type === 'ws'
+              }
+
+              return true
+            })
+            .map(([callID, call]) => ({ callID, call }))
+
+    for (const { callID, call } of calls) {
+      for (const request of reverseCopy(call.requests)) {
+        items.push({ callID, request })
+      }
+    }
+
+    return items.length === 0 ? null : items
   })
 
   const filteredRequests = createMemo(() => {
     if (uiStore.selectedSubitem) {
-      return requests()?.filter((request) => {
-        return request.alias === uiStore.selectedSubitem
+      return requests()?.filter((item) => {
+        return item.request.alias === uiStore.selectedSubitem
       })
     } else {
       return requests()
@@ -269,10 +290,11 @@ export const Timeline = () => {
 
     if (!requestsToShow || requestsToShow.length === 0) return null
 
-    const items: TimelineItem[] = requestsToShow.map((request) => ({
+    const items: TimelineItem[] = requestsToShow.map((item) => ({
       itemType: 'request',
-      request,
-      time: request.startTime,
+      callID: item.callID,
+      request: item.request,
+      time: item.request.startTime,
     }))
 
     for (const marker of callsStore.markers) {
@@ -315,7 +337,7 @@ export const Timeline = () => {
   })
 
   const selectedRequestId = $(
-    uiStore.selectedRequest || filteredRequests()?.[0]?.id,
+    uiStore.selectedRequest || filteredRequests()?.[0]?.request.id,
   )
 
   return (
@@ -419,7 +441,10 @@ export const Timeline = () => {
               >
                 <ButtonElement
                   onClick={() => {
-                    setUiStore('selectedRequest', request.id)
+                    setUiStore({
+                      selectedCall: item.callID,
+                      selectedRequest: request.id,
+                    })
                   }}
                   classList={{
                     selected: request.id === selectedRequestId,

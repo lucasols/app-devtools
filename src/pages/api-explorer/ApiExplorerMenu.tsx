@@ -1,10 +1,11 @@
+import ButtonElement from '@src/components/ButtonElement'
 import Icon from '@src/components/Icon'
 import {
   ApiExplorerMenuItem,
   MenuItem,
 } from '@src/pages/api-explorer/ApiExplorerMenuItem'
 import { callsStore } from '@src/stores/callsStore'
-import { uiStore } from '@src/stores/uiStore'
+import { setUiStore, uiStore } from '@src/stores/uiStore'
 import { inline } from '@src/style/helpers/inline'
 import { stack } from '@src/style/helpers/stack'
 import { transition } from '@src/style/helpers/transition'
@@ -18,13 +19,26 @@ const containerStyle = css`
     ${stack()};
     border-right: 1px solid ${colors.white.alpha(0.1)};
 
-    > h1 {
-      font-size: 18px;
-      padding-left: 12px;
-      padding-top: 10px;
-      font-family: ${fonts.decorative};
-      color: ${colors.secondary.var};
-      padding-bottom: 12px;
+    > .title {
+      ${inline({ gap: 8, justify: 'spaceBetween' })};
+      padding: 10px 10px 12px 12px;
+
+      > h1 {
+        font-size: 18px;
+        font-family: ${fonts.decorative};
+        color: ${colors.secondary.var};
+      }
+
+      > button {
+        ${inline({ gap: 4 })};
+        font-size: 11px;
+        color: ${colors.white.alpha(0.6)};
+        --icon-size: 13px;
+
+        &:hover {
+          color: ${colors.white.var};
+        }
+      }
     }
   }
 `
@@ -91,8 +105,6 @@ const tabsStyle = css`
   }
 `
 
-const selectedTab = createSignalRef<'api' | 'ws' | 'all'>('api')
-
 export const ApiExplorerMenu = () => {
   const search = createSignalRef('')
   const listIsHovered = createSignalRef(false)
@@ -112,13 +124,13 @@ export const ApiExplorerMenu = () => {
     for (const [key, value] of callsEntries) {
       const subitemsWithAlias = new Set<string>()
 
-      if (selectedTab.value === 'api') {
+      if (uiStore.apiExplorerMenuTab === 'api') {
         if (value.type !== 'fetch' && value.type !== 'mutation') {
           continue
         }
       }
 
-      if (selectedTab.value === 'ws') {
+      if (uiStore.apiExplorerMenuTab === 'ws') {
         if (value.type !== 'ws') {
           continue
         }
@@ -178,28 +190,46 @@ export const ApiExplorerMenu = () => {
   }, 'id')
 
   const currentCallId = $(uiStore.selectedCall)
+  const selectedCallIds = $(uiStore.selectedCallIds)
 
   return (
     <div class={containerStyle}>
-      <h1>API EXPLORER</h1>
+      <div class="title">
+        <h1>API EXPLORER</h1>
+
+        <Show when={selectedCallIds.length > 0}>
+          <ButtonElement
+            title="Clear endpoint selection"
+            onClick={() => {
+              setUiStore({
+                selectedCallIds: [],
+                selectedSubitem: null,
+              })
+            }}
+          >
+            <Icon name="x" />
+            Clear
+          </ButtonElement>
+        </Show>
+      </div>
 
       <div class={tabsStyle}>
         <button
-          onClick={() => selectedTab.set('api')}
-          classList={{ active: selectedTab.value === 'api' }}
+          onClick={() => setUiStore('apiExplorerMenuTab', 'api')}
+          classList={{ active: uiStore.apiExplorerMenuTab === 'api' }}
         >
           API
         </button>
         <button
-          onClick={() => selectedTab.set('ws')}
-          classList={{ active: selectedTab.value === 'ws' }}
+          onClick={() => setUiStore('apiExplorerMenuTab', 'ws')}
+          classList={{ active: uiStore.apiExplorerMenuTab === 'ws' }}
         >
           WebSocket
         </button>
 
         <button
-          onClick={() => selectedTab.set('all')}
-          classList={{ active: selectedTab.value === 'all' }}
+          onClick={() => setUiStore('apiExplorerMenuTab', 'all')}
+          classList={{ active: uiStore.apiExplorerMenuTab === 'all' }}
         >
           All
         </button>
@@ -237,6 +267,7 @@ export const ApiExplorerMenu = () => {
                 index={i()}
                 item={item}
                 currentCallId={currentCallId}
+                selectedCallIds={selectedCallIds}
                 expanded={isExpanded()}
                 onToggleExpanded={() => {
                   const nextExpandedItems = new Map(expandedItems.value)

@@ -212,6 +212,7 @@ function openInExplorer(item: FlatRequest) {
   setUiStore({
     selectedPage: 'explorer',
     selectedCall: item.callID,
+    selectedCallIds: [item.callID],
     selectedRequest: item.request.id,
     selectedSubitem: null,
   })

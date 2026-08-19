@@ -977,6 +977,7 @@ export const TimelineViewPage = () => {
                         setUiStore({
                           selectedPage: 'explorer',
                           selectedCall: row.callID,
+                          selectedCallIds: [row.callID],
                           selectedRequest: row.request.id,
                           selectedSubitem: null,
                         })

@@ -482,14 +482,13 @@ export const RequestDetails = () => {
     return selectedTab
   })
 
-  return (
-    <div class={containerStyle}>
-      <Show
-        when={selectedRequest.value}
-        keyed
-      >
-        {(request) => (
-          <>
+  const SelectedRequestDetails = (props: {
+    fallbackRequest: NonNullable<typeof selectedRequest.value>
+  }) => {
+    const request = $(selectedRequest.value ?? props.fallbackRequest)
+
+    return (
+      <>
           <h1>
             <span class="type">
               {request.type === 'ws'
@@ -828,8 +827,23 @@ export const RequestDetails = () => {
               </Match>
             </Switch>
           </div>
-          </>
-        )}
+      </>
+    )
+  }
+
+  return (
+    <div class={containerStyle}>
+      <Show
+        when={selectedRequest.value?.id}
+        keyed
+      >
+        {(requestId) => {
+          const request = selectedRequest.value
+
+          return request?.id === requestId ? (
+            <SelectedRequestDetails fallbackRequest={request} />
+          ) : null
+        }}
       </Show>
     </div>
   )

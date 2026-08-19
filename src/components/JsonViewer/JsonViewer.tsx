@@ -253,7 +253,8 @@ export type JsonViewerExpandDepth = 'all' | 'none' | number
 
 type JsonTreeContext = {
   compact: boolean
-  getInitialExpanded: (indent: number) => boolean
+  getInitialExpanded: (path: string, indent: number) => boolean
+  setExpanded: (path: string, expanded: boolean) => void
 }
 
 type JsonViewerProps = {
@@ -278,17 +279,33 @@ const CopyValueButton = (props: { value: unknown }) => (
   </ButtonElement>
 )
 
+function getChildPath(parentPath: string, key: string | number) {
+  const pathSegment = String(key)
+    .replaceAll('~', '~0')
+    .replaceAll('/', '~1')
+
+  return `${parentPath}/${pathSegment}`
+}
+
 const ValueItem = (props: {
   value: unknown
   indent: number
+  path: string
   key?: string
   index?: number
   ctx: JsonTreeContext
 }) => {
-  let expanded = $signal(props.ctx.getInitialExpanded(props.indent))
+  let expanded = $signal(
+    props.ctx.getInitialExpanded(props.path, props.indent),
+  )
   let showAllChilds = $signal(!props.ctx.compact)
 
   const maxCompactChildrenToUse = props.indent >= 2 ? 5 : compactMaxChildren
+
+  function setExpanded(value: boolean) {
+    expanded = value
+    props.ctx.setExpanded(props.path, value)
+  }
 
   return (
     <>
@@ -306,7 +323,7 @@ const ValueItem = (props: {
         const toggleExpanded = showExpandButton && (
           <ButtonElement
             onClick={() => {
-              expanded = !expanded
+              setExpanded(!expanded)
             }}
             classList={{
               expanded,
@@ -346,7 +363,7 @@ const ValueItem = (props: {
               <div
                 class="collapsed"
                 onClick={() => {
-                  expanded = true
+                  setExpanded(true)
                 }}
               >
                 {valueIsArray ? (
@@ -398,7 +415,7 @@ const ValueItem = (props: {
                                 if (e.shiftKey) {
                                   void copyToClipboard(value)
                                 } else if (!expanded) {
-                                  expanded = true
+                                  setExpanded(true)
                                 }
                               }
                             : undefined
@@ -428,6 +445,10 @@ const ValueItem = (props: {
                                       <ValueItem
                                         value={itemValue}
                                         indent={props.indent + 1}
+                                        path={getChildPath(
+                                          props.path,
+                                          key ?? index,
+                                        )}
                                         key={key ?? undefined}
                                         index={
                                           key === null ? index : undefined
@@ -520,6 +541,8 @@ export const JsonViewer = (props: JsonViewerProps) => {
   let userSetExpandDepth = $signal(false)
   let treeRevision = $signal(1)
 
+  const expansionOverrides = new Map<string, boolean>()
+
   let debounceTimeout: number | undefined
 
   onCleanup(() => clearTimeout(debounceTimeout))
@@ -534,6 +557,7 @@ export const JsonViewer = (props: JsonViewerProps) => {
   }
 
   function setExpandDepth(depth: JsonViewerExpandDepth) {
+    expansionOverrides.clear()
     expandDepth = depth
     userSetExpandDepth = true
     treeRevision = treeRevision + 1
@@ -563,13 +587,23 @@ export const JsonViewer = (props: JsonViewerProps) => {
 
     return {
       compact,
-      getInitialExpanded(indent) {
+      getInitialExpanded(path, indent) {
         if (depth === 'none') return false
+
+        if (!isSearching) {
+          const expansionOverride = expansionOverrides.get(path)
+
+          if (expansionOverride !== undefined) return expansionOverride
+        }
+
         if (typeof depth === 'number') return indent < depth
         if (isSearching) return true
         if (autoDepth !== null && indent >= autoDepth) return false
         if (compact && indent >= 3) return false
         return true
+      },
+      setExpanded(path, expanded) {
+        expansionOverrides.set(path, expanded)
       },
     }
   })
@@ -688,6 +722,7 @@ export const JsonViewer = (props: JsonViewerProps) => {
               <ValueItem
                 value={result.value}
                 indent={0}
+                path=""
                 ctx={treeCtx}
               />
             </div>
