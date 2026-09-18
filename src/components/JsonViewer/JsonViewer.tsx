@@ -252,9 +252,14 @@ const clampStringsLongerThan = 600
 export type JsonViewerExpandDepth = 'all' | 'none' | number
 
 type JsonTreeContext = {
-  compact: boolean
-  getInitialExpanded: (path: string, indent: number) => boolean
-  setExpanded: (path: string, expanded: boolean) => void
+  getNodeState: (path: string, indent: number) => JsonNodeState
+  clearNodeStates: () => void
+}
+
+type JsonNodeState = {
+  expanded: boolean
+  showAllChildren: boolean
+  stringExpanded: boolean
 }
 
 type JsonViewerProps = {
@@ -295,16 +300,15 @@ const ValueItem = (props: {
   index?: number
   ctx: JsonTreeContext
 }) => {
-  let expanded = $signal(
-    props.ctx.getInitialExpanded(props.path, props.indent),
-  )
-  let showAllChilds = $signal(!props.ctx.compact)
+  const nodeState = props.ctx.getNodeState(props.path, props.indent)
+  let expanded = $signal(nodeState.expanded)
+  let showAllChilds = $signal(nodeState.showAllChildren)
 
   const maxCompactChildrenToUse = props.indent >= 2 ? 5 : compactMaxChildren
 
   function setExpanded(value: boolean) {
+    nodeState.expanded = value
     expanded = value
-    props.ctx.setExpanded(props.path, value)
   }
 
   return (
@@ -322,13 +326,11 @@ const ValueItem = (props: {
 
         const toggleExpanded = showExpandButton && (
           <ButtonElement
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation()
               setExpanded(!expanded)
             }}
-            classList={{
-              expanded,
-            }}
-            class="expand-button"
+            class={`expand-button${expanded ? ' expanded' : ''}`}
           >
             <Icon
               name="caret-down"
@@ -430,49 +432,43 @@ const ValueItem = (props: {
                       {expanded && (
                         <>
                           <div class="childs">
-                            {(() => {
-                              let items = entries
-                              const totalSize = items.length
-
-                              if (!showAllChilds) {
-                                items = items.slice(0, maxCompactChildrenToUse)
+                            <For
+                              each={
+                                showAllChilds
+                                  ? entries
+                                  : entries.slice(0, maxCompactChildrenToUse)
                               }
-
-                              return (
-                                <>
-                                  {items.map(([key, itemValue], index) => (
-                                    <div class="child">
-                                      <ValueItem
-                                        value={itemValue}
-                                        indent={props.indent + 1}
-                                        path={getChildPath(
-                                          props.path,
-                                          key ?? index,
-                                        )}
-                                        key={key ?? undefined}
-                                        index={
-                                          key === null ? index : undefined
-                                        }
-                                        ctx={props.ctx}
-                                      />
-                                    </div>
-                                  ))}
-
-                                  {!showAllChilds &&
-                                    totalSize > maxCompactChildrenToUse && (
-                                      <ButtonElement
-                                        onClick={() => {
-                                          showAllChilds = true
-                                        }}
-                                        class="show-all"
-                                      >
-                                        …show all (+
-                                        {totalSize - maxCompactChildrenToUse})
-                                      </ButtonElement>
+                            >
+                              {([key, itemValue], index) => (
+                                <div class="child">
+                                  <ValueItem
+                                    value={itemValue}
+                                    indent={props.indent + 1}
+                                    path={getChildPath(
+                                      props.path,
+                                      key ?? index(),
                                     )}
-                                </>
-                              )
-                            })()}
+                                    key={key ?? undefined}
+                                    index={key === null ? index() : undefined}
+                                    ctx={props.ctx}
+                                  />
+                                </div>
+                              )}
+                            </For>
+
+                            {!showAllChilds &&
+                              entries.length > maxCompactChildrenToUse && (
+                                <ButtonElement
+                                  onClick={() => {
+                                    nodeState.showAllChildren = true
+                                    showAllChilds = true
+                                  }}
+                                  class="show-all"
+                                >
+                                  …show all (+
+                                  {entries.length - maxCompactChildrenToUse})
+                                </ButtonElement>
+                              )}
                           </div>
                           <div class="delimiter end">{delimiters[1]}</div>
                         </>
@@ -481,7 +477,12 @@ const ValueItem = (props: {
                   )
                 }
 
-                return <PrimitiveValue value={value} />
+                return (
+                  <PrimitiveValue
+                    value={value}
+                    nodeState={nodeState}
+                  />
+                )
               })()
             )}
           </>
@@ -491,12 +492,15 @@ const ValueItem = (props: {
   )
 }
 
-const PrimitiveValue = (props: { value: unknown }) => {
+const PrimitiveValue = (props: {
+  value: unknown
+  nodeState: JsonNodeState
+}) => {
   const isLongString =
     typeof props.value === 'string' &&
     props.value.length > clampStringsLongerThan
 
-  let clamped = $signal(isLongString)
+  let clamped = $signal(isLongString && !props.nodeState.stringExpanded)
 
   return (
     <div
@@ -516,6 +520,7 @@ const PrimitiveValue = (props: { value: unknown }) => {
               : String(props.value),
           )
         } else if (clamped) {
+          props.nodeState.stringExpanded = true
           clamped = false
         }
       }}
@@ -541,7 +546,7 @@ export const JsonViewer = (props: JsonViewerProps) => {
   let userSetExpandDepth = $signal(false)
   let treeRevision = $signal(1)
 
-  const expansionOverrides = new Map<string, boolean>()
+  const nodeStates = new Map<string, JsonNodeState>()
 
   let debounceTimeout: number | undefined
 
@@ -557,7 +562,8 @@ export const JsonViewer = (props: JsonViewerProps) => {
   }
 
   function setExpandDepth(depth: JsonViewerExpandDepth) {
-    expansionOverrides.clear()
+    nodeStates.clear()
+    ctx().clearNodeStates()
     expandDepth = depth
     userSetExpandDepth = true
     treeRevision = treeRevision + 1
@@ -577,7 +583,7 @@ export const JsonViewer = (props: JsonViewerProps) => {
   )
 
   const ctx = createMemo((): JsonTreeContext => {
-    const isSearching = debouncedQuery.trim() !== ''
+    const isSearching = !!props.search && debouncedQuery.trim() !== ''
     const depth = expandDepth
     const compact = !!props.compact
 
@@ -585,25 +591,31 @@ export const JsonViewer = (props: JsonViewerProps) => {
     // sets an expansion
     const autoDepth = userSetExpandDepth ? null : autoExpandDepth()
 
+    // Filtered arrays can have different paths, so keep their state separate.
+    const states = isSearching ? new Map<string, JsonNodeState>() : nodeStates
+
+    function getInitialExpanded(indent: number) {
+      if (depth === 'none') return false
+      if (typeof depth === 'number') return indent < depth
+      if (isSearching) return true
+      if (autoDepth !== null && indent >= autoDepth) return false
+      if (compact && indent >= 3) return false
+      return true
+    }
+
     return {
-      compact,
-      getInitialExpanded(path, indent) {
-        if (depth === 'none') return false
+      clearNodeStates: () => states.clear(),
+      getNodeState(path, indent) {
+        const existing = states.get(path)
+        if (existing) return existing
 
-        if (!isSearching) {
-          const expansionOverride = expansionOverrides.get(path)
-
-          if (expansionOverride !== undefined) return expansionOverride
+        const state: JsonNodeState = {
+          expanded: getInitialExpanded(indent),
+          showAllChildren: !compact,
+          stringExpanded: false,
         }
-
-        if (typeof depth === 'number') return indent < depth
-        if (isSearching) return true
-        if (autoDepth !== null && indent >= autoDepth) return false
-        if (compact && indent >= 3) return false
-        return true
-      },
-      setExpanded(path, expanded) {
-        expansionOverrides.set(path, expanded)
+        states.set(path, state)
+        return state
       },
     }
   })
