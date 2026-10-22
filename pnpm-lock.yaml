@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@ls-stack/utils':
-        specifier: ^3.77.0
-        version: 3.77.0
+        specifier: ^4.0.0
+        version: 4.0.0
       '@lucasols/utils':
         specifier: ^4.31.0
         version: 4.31.0
@@ -437,8 +437,8 @@ packages:
   '@leeoniya/ufuzzy@1.0.19':
     resolution: {integrity: sha512-0pikDeYt0IHEUPza5RTCDXc/17S1pTrYnReEMp8Aa6k1ovzw5QdZLwicW8TjljwEZRb6oYag0xmALohrcq/yOQ==}
 
-  '@ls-stack/utils@3.77.0':
-    resolution: {integrity: sha512-8jswtuz/LRwppLxoVgQJ6OWP3fI2T4KE6fmyVk9TNkRu9rVl6YXzIt+7OlYVc2FVj6a6qKvG8zUFbHD775K2nA==}
+  '@ls-stack/utils@4.0.0':
+    resolution: {integrity: sha512-b+0ysXyHUSbhNhLcZpUHDzaN4am8vFYHbnPbyAjejBRPGIvE6w6JClS61Tmgs1eMxiR2Bn5ISCENGj6KaDtqvw==}
     engines: {node: '>=20.0.0'}
 
   '@lucasols/eslint-plugin-extended-lint@1.6.0':
@@ -1221,6 +1221,7 @@ packages:
   eslint@9.39.4:
     resolution: {integrity: sha512-XoMjdBOwe/esVgEvLmNsD3IRHkm7fbKIUGvrleloJXUZgDHig2IPWNniv+GwjyJXzuNqVjlr5+4yVUZjycJwfQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -1251,8 +1252,8 @@ packages:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
 
-  evtmitter@1.0.2:
-    resolution: {integrity: sha512-Y3LObkozuxG0aCdzhMFoxbZyl9osl86mK5B/mIYpRaVsYf7I5bssOFYNBCFnoAgq0A6PkFjxpuojGpZu01w8Nw==}
+  evtmitter@1.1.1:
+    resolution: {integrity: sha512-2UjhRdqcBUzI+507oJu9h7FegqvxF8X02Q0bsTMc6uCAYxdbgiqFSQl8xCugOMIAAc2mc+yH6VjOg32WwIqf4Q==}
     engines: {node: '>=14.6.0'}
 
   expect-type@1.4.0:
@@ -2385,10 +2386,10 @@ snapshots:
 
   '@leeoniya/ufuzzy@1.0.19': {}
 
-  '@ls-stack/utils@3.77.0':
+  '@ls-stack/utils@4.0.0':
     dependencies:
       '@leeoniya/ufuzzy': 1.0.19
-      evtmitter: 1.0.2
+      evtmitter: 1.1.1
       t-result: 0.6.1
 
   '@lucasols/eslint-plugin-extended-lint@1.6.0(eslint@9.39.4)(typescript@5.9.3)':
@@ -3139,7 +3140,7 @@ snapshots:
 
   esutils@2.0.3: {}
 
-  evtmitter@1.0.2: {}
+  evtmitter@1.1.1: {}
 
   expect-type@1.4.0: {}
 
