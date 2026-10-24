@@ -24,7 +24,13 @@ An in-app devtools panel for inspecting network calls (API requests and websocke
 - `pnpm dev` — run the dev playground with Vite
 - `pnpm lint` — ESLint (`--max-warnings 0`) + typecheck (`tsc -p tsconfig.prod.json`)
 - `pnpm build` — lint + Vite build + tsup `--dts-only`
-- `pnpm deploy` — check git sync, build, and publish to npm
+
+## Git and Publishing Workflow
+
+These are pre-approved, do them without asking the user for confirmation:
+
+- Always deliver changes through a pull request: create a branch from `main`, commit, push and open the PR with `gh pr create`. Never commit directly to `main`
+- Publish packages only from `main`, after the PR with the changes is merged: switch to an up-to-date `main` and run `pkg-manager publish --type <patch|minor|major>` from the repo root
 
 ## Conventions
 
