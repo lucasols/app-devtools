@@ -121,7 +121,11 @@ export function initializeDevTools({
       active instanceof HTMLElement &&
       (active.isContentEditable ||
         active.tagName === 'INPUT' ||
-        active.tagName === 'TEXTAREA')
+        active.tagName === 'TEXTAREA' ||
+        // code editors like Monaco receive the typing through the EditContext
+        // API on Chromium, in an element that is neither an input nor
+        // contenteditable
+        ('editContext' in active && active.editContext != null))
     )
   }
 
