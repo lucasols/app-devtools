@@ -136,9 +136,18 @@ export const ApiExplorerMenu = () => {
         }
       }
 
+      let errorCount = 0
+      let warningCount = 0
+
       for (const request of value.requests) {
         if (request.alias) {
           subitemsWithAlias.add(request.alias)
+        }
+
+        if (request.isError) {
+          errorCount++
+        } else if (request.warnings?.length) {
+          warningCount++
         }
       }
 
@@ -152,6 +161,10 @@ export const ApiExplorerMenu = () => {
           },
         }),
         ...value,
+        // primitive counts so the reconciled item updates when a request
+        // finishes, since `requests` is mutated in place
+        errorCount,
+        warningCount,
       })
     }
 

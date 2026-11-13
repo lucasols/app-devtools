@@ -937,6 +937,18 @@ if (import.meta.env.DEV) {
     })
   }, 5000)
 
+  // failed request example
+  addCall({
+    payload: { example: 'error' },
+    path: '/example/failed-request',
+    type: 'fetch',
+    method: 'POST',
+  })({
+    isError: true,
+    status: 500,
+    response: { error: 'Internal server error' },
+  })
+
   // pending request example that never completes
   addCall({
     payload: { example: 'pending' },
