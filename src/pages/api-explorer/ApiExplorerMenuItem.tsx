@@ -32,6 +32,30 @@ const menuItemStyle = css`
         > span {
           ${ellipsis};
           flex-shrink: 1;
+          /* keeps the issues badges aligned to the right */
+          margin-right: auto;
+        }
+
+        > .issues-badge {
+          flex-shrink: 0;
+          min-width: 16px;
+          height: 16px;
+          padding: 0 4px;
+          border-radius: 8px;
+          font-size: 10px;
+          font-weight: 600;
+          line-height: 16px;
+          text-align: center;
+
+          &.error {
+            color: ${colors.error.var};
+            background-color: ${colors.error.alpha(0.16)};
+          }
+
+          &.warning {
+            color: ${colors.warning.var};
+            background-color: ${colors.warning.alpha(0.16)};
+          }
         }
       }
     }
@@ -93,6 +117,10 @@ type ApiExplorerMenuItemProps = {
 export type MenuItem = ApiCall & {
   id: string
   subitemsWithAlias: string[]
+  /** number of requests that failed */
+  errorCount: number
+  /** number of successful requests with warnings */
+  warningCount: number
 }
 
 export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
@@ -144,6 +172,28 @@ export const ApiExplorerMenuItem = (props: ApiExplorerMenuItemProps) => {
           </div>
 
           <span title={item.name}>{item.name}</span>
+
+          <Show when={item.errorCount > 0}>
+            <div
+              class="issues-badge error"
+              title={`${item.errorCount} request${
+                item.errorCount === 1 ? '' : 's'
+              } with errors`}
+            >
+              {item.errorCount}
+            </div>
+          </Show>
+
+          <Show when={item.warningCount > 0}>
+            <div
+              class="issues-badge warning"
+              title={`${item.warningCount} request${
+                item.warningCount === 1 ? '' : 's'
+              } with warnings`}
+            >
+              {item.warningCount}
+            </div>
+          </Show>
         </ButtonElement>
 
         {item.subitemsWithAlias.length > 0 && (
